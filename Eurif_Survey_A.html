@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수면·카페인·디지털 습관 연구</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans KR"', 'sans-serif'],
+                    },
+                    colors: {
+                        bg: '#0f172a',
+                        card: '#1e293b',
+                        cardHover: '#334155',
+                        primary: '#6366f1',
+                        secondary: '#8b5cf6',
+                        accent: '#ec4899',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        textMain: '#f8fafc',
+                        textSub: '#94a3b8'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent; /* 폴백 색상 */
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+        }
+        
+        .heatmap-cell {
+            transition: all 0.2s ease;
+        }
+        
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        
+        .option-label {
+            transition: all 0.2s ease;
+            border: 1px solid #334155;
+        }
+        .option-label:hover {
+            background-color: #334155;
+            border-color: #6366f1;
+        }
+        input[type="radio"]:checked + .option-label {
+            background-color: #312e81;
+            border-color: #6366f1;
+            color: #fff;
+            box-shadow: 0 0 0 1px #6366f1;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .view-section {
+            display: none;
+        }
+        .view-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 glass-panel border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
+                    <i class="fas fa-brain text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white">수면·카페인·디지털 습관 연구</h1>
+                    <p class="text-xs text-textSub" id="header-subtitle">학생용 설문지</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Survey Header Controls -->
+                <div id="survey-header" class="flex items-center gap-3">
+                    <div class="text-xs text-textSub hidden sm:block">
+                        <span id="progress-text">0%</span> 완료
+                    </div>
+                    <button onclick="openAdminModal()" class="p-2 text-textSub hover:text-white transition" title="관리자 모드">
+                        <i class="fas fa-cog text-xl"></i>
+                    </button>
+                </div>
+                <!-- Admin Header Controls -->
+                <div id="admin-header" class="hidden flex items-center gap-3">
+                    <button onclick="exportData()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-download"></i> PDF 내보내기
+                    </button>
+                    <button onclick="exitAdmin()" class="p-2 text-textSub hover:text-white transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Progress Bar (Survey Only) -->
+        <div id="progress-bar-container" class="h-1 w-full bg-slate-800">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </header>
+
+    <!-- SURVEY VIEW -->
+    <main id="survey-view" class="view-section active pt-24 pb-12 px-4 max-w-3xl mx-auto">
+        
+        <!-- Intro Section -->
+        <div id="intro-section" class="text-center py-16 animate-fade-in">
+            <div class="inline-block px-3 py-1 rounded-full bg-slate-800 text-primary text-xs font-medium mb-6 border border-slate-700">
+                ✦ 수면·카페인·디지털 습관 연구
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold mb-6 leading-tight">
+                당신의 <span class="gradient-text">수면 패턴</span>과<br>
+                <span class="gradient-text">카페인 습관</span>을 분석합니다
+            </h1>
+            <p class="text-textSub mb-8 max-w-lg mx-auto">
+                총 19 개 문항으로 구성된 설문입니다. 솔직하게 응답할수록 더 정확한 분석 결과를 받으실 수 있습니다.
+            </p>
+            
+            <div class="flex justify-center gap-3 mb-12">
+                <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-success"></span> 총 19 문항
+                </div>
+                <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-warning"></span> 소요 3~5 분
+                </div>
+                <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-primary"></span> 익명 처리
+                </div>
+            </div>
+
+            <button onclick="startSurvey()" class="px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:from-primaryHover hover:to-secondaryHover text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition transform hover:scale-105">
+                설문 시작하기
+            </button>
+        </div>
+
+        <!-- Survey Form -->
+        <form id="survey-form" class="hidden space-y-8">
+            <div id="questions-container"></div>
+
+            <div class="pt-8 pb-20 text-center">
+                <button type="button" onclick="submitSurvey()" class="w-full sm:w-auto px-12 py-4 bg-gradient-to-r from-primary to-secondary hover:from-primaryHover hover:to-secondaryHover text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition transform hover:scale-105">
+                    분석 결과 받기
+                </button>
+                <p class="mt-4 text-xs text-textSub">제출 후 결과는 즉시 분석되어 표시됩니다.</p>
+            </div>
+        </form>
+
+        <!-- Result Section -->
+        <div id="result-section" class="hidden text-center py-16 animate-fade-in">
+            <div class="w-20 h-20 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-3xl text-success"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-4">설문이 완료되었습니다!</h2>
+            <p class="text-textSub mb-8">소중한 의견을 보내주셔서 감사합니다.<br>데이터는 익명으로 처리되어 연구 목적으로만 사용됩니다.</p>
+            <button onclick="location.reload()" class="text-primary hover:underline">홈으로 돌아가기</button>
+        </div>
+    </main>
+
+    <!-- ADMIN DASHBOARD VIEW -->
+    <main id="admin-view" class="view-section pt-24 pb-12 px-4 max-w-7xl mx-auto">
+        
+        <!-- Overview Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-fade-in">
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-textSub text-sm mb-1">총 응답자</p>
+                        <h3 class="text-3xl font-bold text-white" id="stat-total">0</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                        <i class="fas fa-users text-primary"></i>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-success">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>실시간 수집 중</span>
+                </div>
+            </div>
+
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-textSub text-sm mb-1">평균 카페인</p>
+                        <h3 class="text-3xl font-bold text-white" id="stat-caffeine">0mg</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
+                        <i class="fas fa-coffee text-warning"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full mt-2">
+                    <div id="caffeine-bar" class="bg-warning h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-textSub text-sm mb-1">평균 수면 시간</p>
+                        <h3 class="text-3xl font-bold text-white" id="stat-sleep">0h</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center">
+                        <i class="fas fa-moon text-secondary"></i>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-textSub">
+                    <i class="fas fa-clock"></i>
+                    <span>평일 기준</span>
+                </div>
+            </div>
+
+            <div class="stat-card rounded-2xl p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-textSub text-sm mb-1">수면 장애 위험</p>
+                        <h3 class="text-3xl font-bold text-white" id="stat-risk">0%</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-danger/20 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                    </div>
+                </div>
+                <div class="text-xs text-textSub mt-2" id="risk-level">-</div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Caffeine Distribution -->
+            <div class="glass-panel rounded-2xl p-6 animate-slide-up">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">카페인 섭취량 분포</h3>
+                    <select id="caffeine-filter" onchange="updateCharts()" class="bg-slate-800 border border-slate-600 text-xs rounded-lg px-3 py-1 text-white focus:outline-none focus:border-primary">
+                        <option value="all">전체 보기</option>
+                        <option value="high">고카페인 (300mg+)</option>
+                        <option value="low">저카페인</option>
+                    </select>
+                </div>
+                <div class="chart-container">
+                    <canvas id="caffeineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Sleep Pattern -->
+            <div class="glass-panel rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.1s">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">수면 패턴 분석</h3>
+                    <div class="flex gap-2">
+                        <span class="text-xs text-textSub bg-slate-800 px-2 py-1 rounded">평일</span>
+                        <span class="text-xs text-textSub bg-slate-800 px-2 py-1 rounded">주말</span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="sleepChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Correlation Heatmap -->
+            <div class="glass-panel rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.2s">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">상관관계 분석 (히트맵)</h3>
+                    <i class="fas fa-info-circle text-textSub cursor-help" title="색상이 진할수록 상관관계가 높음"></i>
+                </div>
+                <div id="heatmap-container" class="grid grid-cols-5 gap-2 text-xs">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <!-- Digital Usage -->
+            <div class="glass-panel rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.3s">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">디지털 기기 사용 패턴</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="digitalChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cross Analysis Table -->
+        <div class="glass-panel rounded-2xl p-6 mb-8 animate-slide-up" style="animation-delay: 0.4s">
+            <h3 class="text-lg font-bold text-white mb-6">교차 분석: 카페인 섭취량 vs 수면 질</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-textSub uppercase bg-slate-800/50">
+                        <tr>
+                            <th class="px-6 py-3 rounded-tl-lg">카페인 그룹</th>
+                            <th class="px-6 py-3">응답자 수</th>
+                            <th class="px-6 py-3">평균 수면 잠복기</th>
+                            <th class="px-6 py-3">수면 영향 체감</th>
+                            <th class="px-6 py-3">오전 피로도</th>
+                            <th class="px-6 py-3 rounded-tr-lg">학업 영향도</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cross-analysis-body" class="divide-y divide-slate-700">
+                        <!-- Generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Time Series Analysis -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="glass-panel rounded-2xl p-6 lg:col-span-2 animate-slide-up" style="animation-delay: 0.5s">
+                <h3 class="text-lg font-bold text-white mb-6">시간대별 카페인 섭취 vs 수면 시간</h3>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="timeSeriesChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="glass-panel rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.6s">
+                <h3 class="text-lg font-bold text-white mb-6">주요 악화 원인</h3>
+                <div class="space-y-4" id="cause-list">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Data Table -->
+        <div class="glass-panel rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.7s">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-white">상세 응답 데이터</h3>
+                <div class="flex gap-2">
+                    <input type="text" id="search-input" placeholder="검색..." class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:border-primary" onkeyup="filterTable()">
+                    <select id="filter-section" onchange="updateCharts()" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:border-primary">
+                        <option value="all">전체 섹션</option>
+                        <option value="caffeine">카페인</option>
+                        <option value="sleep">수면</option>
+                        <option value="brain">뇌파/학업</option>
+                        <option value="digital">디지털</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto max-h-96">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-textSub uppercase bg-slate-800/50 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3">ID</th>
+                            <th class="px-4 py-3">카페인량</th>
+                            <th class="px-4 py-3">취침시간</th>
+                            <th class="px-4 py-3">수면잠복기</th>
+                            <th class="px-4 py-3">수면영향</th>
+                            <th class="px-4 py-3">오전피로</th>
+                            <th class="px-4 py-3">디지털사용</th>
+                            <th class="px-4 py-3">제출시간</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-table-body" class="divide-y divide-slate-700">
+                        <!-- Generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-modal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-card w-full max-w-md rounded-2xl border border-slate-700 shadow-2xl p-8 transform transition-all scale-100">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fas fa-lock text-2xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">관리자 인증</h2>
+                <p class="text-textSub text-sm">대시보드 접근을 위한 비밀번호를 입력하세요</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <input type="password" id="admin-password" placeholder="비밀번호" class="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition text-center text-lg tracking-widest">
+                </div>
+                <button onclick="checkAdmin()" class="w-full py-3 bg-gradient-to-r from-primary to-secondary hover:from-primaryHover hover:to-secondaryHover text-white font-bold rounded-xl shadow-lg shadow-primary/25 transition transform hover:scale-[1.02]">
+                    대시보드 열기
+                </button>
+                <p id="login-error" class="text-danger text-sm text-center hidden">
+                    <i class="fas fa-exclamation-circle mr-1"></i> 비밀번호가 일치하지 않습니다
+                </p>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <button onclick="closeAdminModal()" class="text-textSub hover:text-white text-sm transition">
+                    <i class="fas fa-times mr-1"></i> 닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Questions Data
+        const questions = [
+            { id: 'q1', category: 'caffeine', question: '수면영향', options: 5, text: '카페인을 섭취한 날, 수면에 미치는 영향 (입면 지연, 수면 중간 깸 등) 을 얼마나 느끼시나요?' },
+            { id: 'q2', category: 'caffeine', question: '심박수반응', options: 5, text: '카페인 섭취 후 심장 두근거림이나 심박수 증가 현상을 어느 정도로 체감하시나요?' },
+            { id: 'q3', category: 'caffeine', question: '각성효과', options: 5, text: '카페인 섭취 후 피로 해소나 졸음 방지 등의 각성 효과를 실제로 얼마나 체감하시나요?' },
+            { id: 'q4', category: 'caffeine', question: '섭취량', options: 5, text: '하루 평균 카페인 총 섭취량은 대략 어느 정도인가요? (아메리카노 1 잔 = 약 150mg 기준)', values: [0, 50, 200, 400, 500] },
+            { id: 'q5', category: 'caffeine', question: '종류', options: 5, text: '가장 자주 섭취하는 카페인 음료의 종류는 무엇인가요?' },
+            { id: 'q6', category: 'caffeine', question: '섭취시간대', options: 5, text: '하루 중 카페인을 가장 주로 섭취하는 시간대는 언제인가요?' },
+            { id: 'q7', category: 'caffeine', question: '타임갭', options: 5, text: '잠드는 시간을 기준으로, 하루 중 마지막으로 카페인을 섭취하는 시점은 언제인가요?' },
+            { id: 'q8', category: 'sleep', question: '수면잠복기', options: 5, text: '잠자리에 누운 후 실제로 잠이 들 때까지 걸리는 시간은 대략 어느 정도인가요?', values: [5, 20, 45, 90, 120] },
+            { id: 'q9', category: 'sleep', question: '평일취침', options: 5, text: '주중 (평일) 을 기준으로, 주로 잠자리에 드는 시간대는 언제인가요?', values: [22, 23, 1, 3, 5] },
+            { id: 'q10', category: 'sleep', question: '기상편차', options: 5, text: '주중 (평일) 과 휴일 (주말) 의 기상 시간은 대략 어느 정도 차이가 나나요?' },
+            { id: 'q11', category: 'sleep', question: '개선방법', options: 5, text: '수면 패턴 (수면위상) 을 정상화하거나 개선하기 위해 시도해 본 가장 주된 방법은 무엇인가요?' },
+            { id: 'q12', category: 'sleep', question: '악화원인', options: 5, text: '본인의 수면 패턴이 악화되는 (망가지는) 가장 큰 원인은 무엇이라고 생각하시나요?' },
+            { id: 'q13', category: 'brain', question: '뇌파활성화', options: 5, text: '전날 수면 시간의 많고 적음에 따라, 다음 날 두뇌의 각성 (머리가 맑아지거나 집중되는 정도) 상태가 얼마나 달라진다고 느끼시나요?' },
+            { id: 'q14', category: 'brain', question: '두뇌최고점', options: 5, text: '하루 중 집중력이 가장 높고 두뇌가 가장 활발하게 움직인다고 체감하는 시간대는 언제인가요?' },
+            { id: 'q15', category: 'brain', question: '오전피로', options: 5, text: '오전 수업 (또는 오전 일과) 시간에 느끼는 피로도는 어느 정도인가요?' },
+            { id: 'q16', category: 'brain', question: '학업영향', options: 5, text: '수면 부족이 본인의 학업 (또는 업무) 집중도 및 성취도에 얼마나 부정적인 영향을 미친다고 생각하시나요?' },
+            { id: 'q17', category: 'digital', question: '사용시간', options: 5, text: '학업이나 업무 외에, 개인적인 목적 (여가 등) 으로 사용하는 하루 평균 디지털 기기 (스마트폰, 태블릿, PC 등) 사용 시간은 얼마나 되나요?', values: [0.5, 2, 4, 6, 8] },
+            { id: 'q18', category: 'digital', question: '야간모드', options: 5, text: '야간에 디지털 기기를 사용할 때, 야간 모드나 다크 모드 등 블루라이트 차단 기능을 얼마나 자주 사용하시나요?' },
+            { id: 'q19', category: 'digital', question: '야간키워드', options: 5, text: '심야 시간 (밤 11 시 이후) 에 온라인 커뮤니티나 SNS 활동을 할 때, 가장 주로 소비하거나 검색하는 키워드 (주제) 는 무엇인가요?' }
+        ];
+
+        const questionOptions = {
+            q1: ['전혀 느끼지 않는다', '거의 느끼지 않는다', '보통이다', '어느 정도 느낀다', '매우 심하게 느낀다'],
+            q2: ['전혀 변화 없음', '미세하게 증가함을 느낌', '약간의 두근거림을 느낌', '뚜렷하게 두근거림을 느낌', '심장이 매우 빠르고 강하게 뜀'],
+            q3: ['전혀 효과가 없다', '거의 효과가 없다', '일시적인 효과가 있다', '확실히 효과가 있다', '매우 큰 효과가 있다'],
+            q4: ['전혀 섭취하지 않음 (0mg)', '1 잔 미만 (1~100mg)', '1~2 잔 정도 (100~300mg)', '3~4 잔 정도 (300~500mg)', '5 잔 이상 (500mg 초과)'],
+            q5: ['마시지 않음', '커피류', '고카페인 에너지 드링크류', '탄산음료', '차 종류 및 기타'],
+            q6: ['섭취하지 않음', '이른 오전', '늦은 오전 ~ 점심', '오후', '저녁 및 심야'],
+            q7: ['섭취하지 않음', '취침 12 시간 이상 전', '취침 6~12 시간 사이', '취침 3~6 시간 사이', '취침 3 시간 이내'],
+            q8: ['10 분 미만', '10~30 분', '30 분~1 시간', '1~2 시간', '2 시간 이상'],
+            q9: ['밤 10 시 이전', '밤 10 시~자정', '자정~새벽 2 시', '새벽 2~4 시', '새벽 4 시 이후'],
+            q10: ['차이 없음', '1 시간 정도', '2 시간 정도', '3 시간 정도', '4 시간 이상'],
+            q11: ['시도해 본 적 없음', '생활 습관 교정', '수면 환경 개선', '전자기기 사용 제한', '의학 및 보조제 도움'],
+            q12: ['불규칙한 생활 습관', '전자기기 사용', '학업/업무 과로', '심리적 요인', '환경/신체적 요인'],
+            q13: ['전혀 달라지지 않는다', '거의 달라지지 않는다', '보통이다', '꽤 많이 달라진다', '매우 크게 달라진다'],
+            q14: ['새벽~이른 아침', '오전', '오후', '저녁', '심야'],
+            q15: ['전혀 피로하지 않다', '별로 피로하지 않다', '보통이다', '꽤 피로하다', '매우 피로하다'],
+            q16: ['전혀 영향을 미치지 않는다', '거의 영향을 미치지 않는다', '보통이다', '꽤 큰 영향을 미친다', '매우 치명적인 영향을 미친다'],
+            q17: ['1 시간 미만', '1~3 시간', '3~5 시간', '5~7 시간', '7 시간 이상'],
+            q18: ['전혀 사용하지 않는다', '거의 사용하지 않는다', '가끔 사용한다', '자주 사용한다', '항상 켜두고 사용한다'],
+            q19: ['야간에 활동하지 않음', '유머/엔터테인먼트', '일상/공감/소통', '취미/관심사', '학업/정보 탐색']
+        };
+
+        let charts = {};
+        let surveyData = JSON.parse(localStorage.getItem('survey_responses') || '[]');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuestions();
+            updateProgress();
+        });
+
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            let html = '';
+
+            const categories = {
+                caffeine: '섹션 1 · 카페인 섭취 및 신체 반응',
+                sleep: '섹션 2 · 수면 패턴 및 위상 분석',
+                brain: '섹션 3 · 뇌파/두뇌 활성화 및 학업 영향',
+                digital: '섹션 4 · 디지털 기기 사용 및 야간 활동'
+            };
+
+            let currentCategory = '';
+            questions.forEach((q, index) => {
+                if (q.category !== currentCategory) {
+                    currentCategory = q.category;
+                    html += `
+                        <div class="flex items-center gap-3 my-8">
+                            <div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+                            <span class="text-sm font-medium text-primary px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                                ${categories[q.category]}
+                            </span>
+                            <div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <div class="bg-card rounded-2xl p-6 border border-slate-700 shadow-lg animate-slide-up" style="animation-delay: ${index * 0.05}s">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="px-2 py-1 rounded bg-slate-700 text-xs font-bold text-primary">${q.id.toUpperCase()}</span>
+                            <span class="text-xs text-textSub border border-slate-600 px-2 py-0.5 rounded-full">${q.question}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-6 leading-snug">${q.text}</h3>
+                        
+                        <div class="space-y-3">
+                            ${questionOptions[q.id].map((opt, i) => `
+                                <label class="flex items-start gap-3 cursor-pointer group">
+                                    <div class="relative flex items-center">
+                                        <input type="radio" name="${q.id}" value="${i+1}" class="peer sr-only" onchange="updateProgress()">
+                                        <div class="w-5 h-5 rounded-full border-2 border-slate-500 peer-checked:border-primary peer-checked:bg-primary transition-all"></div>
+                                        <div class="absolute inset-0 rounded-full bg-primary/20 scale-0 peer-checked:scale-100 transition-transform"></div>
+                                    </div>
+                                    <span class="text-sm text-slate-300 group-hover:text-white transition-colors pt-0.5">${opt}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function startSurvey() {
+            document.getElementById('intro-section').classList.add('hidden');
+            document.getElementById('survey-form').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateProgress() {
+            const total = questions.length;
+            const answered = questions.filter(q => document.querySelector(`input[name="${q.id}"]:checked`)).length;
+            const percent = Math.round((answered / total) * 100);
+            
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            document.getElementById('progress-text').innerText = `${percent}%`;
+        }
+
+        function submitSurvey() {
+            const unanswered = questions.filter(q => !document.querySelector(`input[name="${q.id}"]:checked`));
+            if (unanswered.length > 0) {
+                alert(`아직 답변하지 않은 문항이 ${unanswered.length}개 있습니다.`);
+                const firstUnansweredId = unanswered[0].id;
+                const element = document.querySelector(`input[name="${firstUnansweredId}"]`)?.closest('.bg-card');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('ring-2', 'ring-red-500');
+                    setTimeout(() => element.classList.remove('ring-2', 'ring-red-500'), 2000);
+                }
+                return;
+            }
+
+            if (!confirm('제출하시겠습니까?')) return;
+
+            const responseData = {};
+            questions.forEach(q => {
+                const val = document.querySelector(`input[name="${q.id}"]:checked`).value;
+                responseData[q.id] = {
+                    question: q.text,
+                    category: q.category,
+                    answerIndex: parseInt(val),
+                    answerText: questionOptions[q.id][parseInt(val)-1]
+                };
+            });
+
+            surveyData.push({
+                timestamp: new Date().toISOString(),
+                responses: responseData
+            });
+            localStorage.setItem('survey_responses', JSON.stringify(surveyData));
+
+            document.getElementById('survey-form').classList.add('hidden');
+            document.getElementById('result-section').classList.remove('hidden');
+            document.querySelector('header').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Admin Functions
+        function openAdminModal() {
+            document.getElementById('admin-modal').classList.remove('hidden');
+            document.getElementById('admin-password').focus();
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal').classList.add('hidden');
+            document.getElementById('admin-password').value = '';
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        function checkAdmin() {
+            const pwd = document.getElementById('admin-password').value;
+            if (pwd === 'admin') {
+                closeAdminModal();
+                enterAdminMode();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+                document.getElementById('admin-password').value = '';
+            }
+        }
+
+        function enterAdminMode() {
+            document.getElementById('survey-view').classList.remove('active');
+            document.getElementById('admin-view').classList.add('active');
+            document.getElementById('header-subtitle').textContent = '관리자 대시보드';
+            document.getElementById('survey-header').classList.add('hidden');
+            document.getElementById('admin-header').classList.remove('hidden');
+            document.getElementById('progress-bar-container').classList.add('hidden');
+            
+            renderDashboard();
+        }
+
+        function exitAdmin() {
+            document.getElementById('admin-view').classList.remove('active');
+            document.getElementById('survey-view').classList.add('active');
+            document.getElementById('header-subtitle').textContent = '학생용 설문지';
+            document.getElementById('survey-header').classList.remove('hidden');
+            document.getElementById('admin-header').classList.add('hidden');
+            document.getElementById('progress-bar-container').classList.remove('hidden');
+            
+            // Destroy charts to free memory
+            Object.values(charts).forEach(chart => chart.destroy());
+            charts = {};
+        }
+
+        function renderDashboard() {
+            if (surveyData.length === 0) {
+                alert('수집된 데이터가 없습니다. 먼저 설문을 완료해 주세요.');
+                exitAdmin();
+                return;
+            }
+
+            calculateStats();
+            renderCharts();
+            renderHeatmap();
+            renderCrossAnalysis();
+            renderTimeSeries();
+            renderCauseList();
+            renderDataTable();
+        }
+
+        function calculateStats() {
+            const total = surveyData.length;
+            document.getElementById('stat-total').textContent = total.toLocaleString();
+
+            let caffeineSum = 0;
+            surveyData.forEach(d => {
+                const val = d.responses.q4.answerIndex;
+                const map = [0, 50, 200, 400, 500];
+                caffeineSum += map[val-1] || 0;
+            });
+            const avgCaffeine = Math.round(caffeineSum / total);
+            document.getElementById('stat-caffeine').textContent = `${avgCaffeine}mg`;
+            document.getElementById('caffeine-bar').style.width = `${Math.min((avgCaffeine / 500) * 100, 100)}%`;
+
+            let sleepSum = 0;
+            surveyData.forEach(d => {
+                const val = d.responses.q9.answerIndex;
+                const map = [22, 23, 1, 3, 5];
+                sleepSum += map[val-1] || 0;
+            });
+            let avgSleep = sleepSum / total;
+            if (avgSleep > 12) avgSleep -= 24;
+            document.getElementById('stat-sleep').textContent = `${Math.abs(Math.round(avgSleep))}시간`;
+
+            let riskScore = 0;
+            surveyData.forEach(d => {
+                const sleepImpact = d.responses.q1.answerIndex;
+                const latency = d.responses.q8.answerIndex;
+                const fatigue = d.responses.q15.answerIndex;
+                riskScore += (sleepImpact + latency + fatigue);
+            });
+            const avgRisk = (riskScore / total / 15) * 100;
+            document.getElementById('stat-risk').textContent = `${Math.round(avgRisk)}%`;
+            
+            const riskEl = document.getElementById('risk-level');
+            if (avgRisk < 30) {
+                riskEl.textContent = '낮음 (정상 범위)';
+                riskEl.className = 'text-success';
+            } else if (avgRisk < 60) {
+                riskEl.textContent = '보통 (주의 필요)';
+                riskEl.className = 'text-warning';
+            } else {
+                riskEl.textContent = '높음 (개선 필요)';
+                riskEl.className = 'text-danger';
+            }
+        }
+
+        function renderCharts() {
+            Object.values(charts).forEach(chart => chart.destroy());
+            charts = {};
+
+            const ctx1 = document.getElementById('caffeineChart').getContext('2d');
+            charts.caffeine = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['0mg', '1-100mg', '100-300mg', '300-500mg', '500mg+'],
+                    datasets: [{
+                        label: '응답자 수',
+                        data: getCounts('q4'),
+                        backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('sleepChart').getContext('2d');
+            charts.sleep = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['10 시 이전', '10-12 시', '12-2 시', '2-4 시', '4 시 이후'],
+                    datasets: [{
+                        data: getCounts('q9'),
+                        backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right', labels: { color: '#94a3b8', boxWidth: 12 } } }
+                }
+            });
+
+            const ctx3 = document.getElementById('digitalChart').getContext('2d');
+            charts.digital = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: ['1 시간 미만', '1-3 시간', '3-5 시간', '5-7 시간', '7 시간 이상'],
+                    datasets: [{
+                        label: '응답자 수',
+                        data: getCounts('q17'),
+                        borderColor: '#ec4899',
+                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function getCounts(questionId) {
+            const counts = [0,0,0,0,0];
+            surveyData.forEach(d => {
+                const idx = d.responses[questionId].answerIndex - 1;
+                if (idx >= 0 && idx < 5) counts[idx]++;
+            });
+            return counts;
+        }
+
+        function renderHeatmap() {
+            const container = document.getElementById('heatmap-container');
+            container.innerHTML = '';
+            
+            const labels = ['카페인량', '수면질', '피로도', '집중도', '디지털'];
+            const q4 = surveyData.map(d => d.responses.q4.answerIndex);
+            const q1 = surveyData.map(d => d.responses.q1.answerIndex);
+            const q15 = surveyData.map(d => d.responses.q15.answerIndex);
+            const q16 = surveyData.map(d => d.responses.q16.answerIndex);
+            const q17 = surveyData.map(d => d.responses.q17.answerIndex);
+
+            const corr = (a, b) => {
+                const n = a.length;
+                const sumA = a.reduce((x,y) => x+y, 0);
+                const sumB = b.reduce((x,y) => x+y, 0);
+                const sumAB = a.reduce((x,y,i) => x + y*b[i], 0);
+                const sumA2 = a.reduce((x,y) => x + y*y, 0);
+                const sumB2 = b.reduce((x,y) => x + y*y, 0);
+                const num = n*sumAB - sumA*sumB;
+                const den = Math.sqrt((n*sumA2 - sumA*sumA)*(n*sumB2 - sumB*sumB));
+                return den === 0 ? 0 : num / den;
+            };
+
+            const data = [q4, q1, q15, q16, q17];
+            const matrix = [];
+            for (let i = 0; i < 5; i++) {
+                matrix[i] = [];
+                for (let j = 0; j < 5; j++) {
+                    matrix[i][j] = corr(data[i], data[j]);
+                }
+            }
+
+            labels.forEach((labelI, i) => {
+                labels.forEach((labelJ, j) => {
+                    const val = matrix[i][j];
+                    const intensity = Math.abs(val);
+                    const color = val > 0 ? 
+                        `rgba(239, 68, 68, ${intensity * 0.8})` : 
+                        `rgba(59, 130, 246, ${intensity * 0.8})`;
+                    
+                    const cell = document.createElement('div');
+                    cell.className = 'heatmap-cell p-3 rounded-lg text-center cursor-pointer';
+                    cell.style.backgroundColor = color;
+                    cell.innerHTML = `
+                        <div class="font-bold text-white mb-1 text-[10px]">${labelJ}</div>
+                        <div class="text-xs text-white/90">${val > 0 ? '+' : ''}${val.toFixed(2)}</div>
+                    `;
+                    cell.title = `${labelI} vs ${labelJ}: ${val.toFixed(3)}`;
+                    container.appendChild(cell);
+                });
+            });
+        }
+
+        function renderCrossAnalysis() {
+            const groups = [
+                { name: '저카페인 (0-100mg)', filter: d => d.responses.q4.answerIndex <= 2 },
+                { name: '중카페인 (100-300mg)', filter: d => d.responses.q4.answerIndex === 3 },
+                { name: '고카페인 (300mg+)', filter: d => d.responses.q4.answerIndex >= 4 }
+            ];
+
+            const tbody = document.getElementById('cross-analysis-body');
+            tbody.innerHTML = '';
+
+            groups.forEach(group => {
+                const filtered = surveyData.filter(group.filter);
+                if (filtered.length === 0) return;
+
+                const avgLatency = filtered.reduce((sum, d) => sum + d.responses.q8.answerIndex, 0) / filtered.length;
+                const avgSleepImpact = filtered.reduce((sum, d) => sum + d.responses.q1.answerIndex, 0) / filtered.length;
+                const avgFatigue = filtered.reduce((sum, d) => sum + d.responses.q15.answerIndex, 0) / filtered.length;
+                const avgStudyImpact = filtered.reduce((sum, d) => sum + d.responses.q16.answerIndex, 0) / filtered.length;
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-800/50 transition';
+                row.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-white">${group.name}</td>
+                    <td class="px-6 py-4 text-textSub">${filtered.length}명</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 bg-slate-700 h-2 rounded-full overflow-hidden">
+                                <div class="bg-primary h-full" style="width: ${(avgLatency/5)*100}%"></div>
+                            </div>
+                            <span class="text-xs">${avgLatency.toFixed(1)}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded text-xs ${avgSleepImpact > 3 ? 'bg-danger/20 text-danger' : 'bg-success/20 text-success'}">
+                            ${avgSleepImpact > 3 ? '높음' : '보통'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 bg-slate-700 h-2 rounded-full overflow-hidden">
+                                <div class="bg-warning h-full" style="width: ${(avgFatigue/5)*100}%"></div>
+                            </div>
+                            <span class="text-xs">${avgFatigue.toFixed(1)}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded text-xs ${avgStudyImpact > 3 ? 'bg-danger/20 text-danger' : 'bg-success/20 text-success'}">
+                            ${avgStudyImpact > 3 ? '심각' : '경미'}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderTimeSeries() {
+            const ctx = document.getElementById('timeSeriesChart').getContext('2d');
+            
+            const timeGroups = [0,0,0,0,0];
+            const sleepImpacts = [0,0,0,0,0];
+            
+            surveyData.forEach(d => {
+                const timeIdx = d.responses.q6.answerIndex - 1;
+                const sleepIdx = d.responses.q1.answerIndex;
+                if (timeIdx >= 0 && timeIdx < 5) {
+                    timeGroups[timeIdx]++;
+                    sleepImpacts[timeIdx] += sleepIdx;
+                }
+            });
+
+            const avgImpacts = sleepImpacts.map((sum, i) => timeGroups[i] ? sum / timeGroups[i] : 0);
+
+            charts.timeSeries = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['이른오전', '늦은오전', '오후', '저녁', '심야'],
+                    datasets: [
+                        {
+                            label: '응답자 수',
+                            data: timeGroups,
+                            backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '평균 수면영향 (1-5)',
+                            data: avgImpacts,
+                            type: 'line',
+                            borderColor: '#ec4899',
+                            backgroundColor: '#ec4899',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                        y1: { type: 'linear', display: true, position: 'right', min: 1, max: 5, grid: { drawOnChartArea: false }, ticks: { color: '#ec4899' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        function renderCauseList() {
+            const causes = {};
+            const causeLabels = ['불규칙한 생활습관', '전자기기 사용', '학업/업무 과로', '심리적 요인', '환경/신체적 요인'];
+
+            surveyData.forEach(d => {
+                const idx = d.responses.q12.answerIndex - 1;
+                causes[idx] = (causes[idx] || 0) + 1;
+            });
+
+            const container = document.getElementById('cause-list');
+            container.innerHTML = '';
+
+            const sorted = Object.entries(causes).sort((a,b) => b[1] - a[1]);
+            const total = surveyData.length;
+
+            sorted.forEach(([idx, count]) => {
+                const percent = Math.round((count / total) * 100);
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3';
+                div.innerHTML = `
+                    <div class="w-24 text-xs text-textSub truncate">${causeLabels[idx]}</div>
+                    <div class="flex-1 bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div class="bg-gradient-to-r from-primary to-secondary h-full rounded-full" style="width: ${percent}%"></div>
+                    </div>
+                    <div class="w-12 text-right text-xs font-bold text-white">${percent}%</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderDataTable() {
+            const tbody = document.getElementById('data-table-body');
+            tbody.innerHTML = '';
+
+            surveyData.slice().reverse().forEach((d, idx) => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-slate-800/50 transition border-b border-slate-800';
+                
+                const caffeineMap = ['0mg', '1-100mg', '100-300mg', '300-500mg', '500mg+'];
+                const timeMap = ['10 시 이전', '10-12 시', '12-2 시', '2-4 시', '4 시 이후'];
+                const latencyMap = ['<10 분', '10-30 분', '30-60 분', '1-2 시간', '>2 시간'];
+                const digitalMap = ['<1 시간', '1-3 시간', '3-5 시간', '5-7 시간', '>7 시간'];
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-textSub">#${surveyData.length - idx}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded bg-slate-800 text-xs ${d.responses.q4.answerIndex >= 4 ? 'text-danger' : 'text-success'}">
+                            ${caffeineMap[d.responses.q4.answerIndex-1]}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-textSub">${timeMap[d.responses.q9.answerIndex-1]}</td>
+                    <td class="px-4 py-3 text-textSub">${latencyMap[d.responses.q8.answerIndex-1]}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-1">
+                            ${Array(5).fill(0).map((_, i) => 
+                                `<div class="w-2 h-2 rounded-full ${i < d.responses.q1.answerIndex ? 'bg-primary' : 'bg-slate-700'}"></div>`
+                            ).join('')}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-xs ${d.responses.q15.answerIndex >= 4 ? 'text-danger' : 'text-success'}">
+                            ${d.responses.q15.answerIndex >= 4 ? '높음' : '보통'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-textSub text-xs">${digitalMap[d.responses.q17.answerIndex-1]}</td>
+                    <td class="px-4 py-3 text-textSub text-xs">${new Date(d.timestamp).toLocaleDateString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterTable() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#data-table-body tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        }
+
+        function updateCharts() {
+            renderCharts();
+        }
+
+        function exportData() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(20);
+            doc.text('수면·카페인·디지털 습관 연구 결과', 14, 20);
+            
+            doc.setFontSize(12);
+            doc.text(`총 응답자: ${document.getElementById('stat-total').textContent}`, 14, 40);
+            doc.text(`평균 카페인: ${document.getElementById('stat-caffeine').textContent}`, 14, 50);
+            doc.text(`평균 수면: ${document.getElementById('stat-sleep').textContent}`, 14, 60);
+            
+            const tableData = surveyData.map((d, i) => [
+                i+1,
+                d.responses.q4.answerText,
+                d.responses.q9.answerText,
+                d.responses.q8.answerText,
+                d.responses.q1.answerText
+            ]);
+            
+            doc.autoTable({
+                head: [['ID', '카페인량', '취침시간', '수면잠복기', '수면영향']],
+                body: tableData,
+                startY: 70,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [99, 102, 241] }
+            });
+            
+            doc.save('survey-results.pdf');
+        }
+
+        // Enter key for password
+        document.getElementById('admin-password')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAdmin();
+        });
+    </script>
+</body>
+</html>
