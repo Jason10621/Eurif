@@ -130,7 +130,7 @@
                         <i class="fas fa-cog text-xl"></i>
                     </button>
                 </div>
-                <div id="admin-header" class="hidden flex items-center gap-3">
+                <div id="admin-header" class="hidden items-center gap-3">
                     <div class="flex items-center gap-2 mr-4">
                         <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
                         <span class="text-xs text-success">실시간 연결됨</span>
@@ -455,7 +455,7 @@
     </main>
 
     <!-- Admin Login Modal -->
-    <div id="admin-modal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div id="admin-modal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
         <div class="bg-card w-full max-w-md rounded-2xl border border-slate-700 shadow-2xl p-8">
             <div class="text-center mb-8">
                 <div class="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -710,16 +710,33 @@
 
             // Firebase 또는 localStorage 에 저장
             if (db) {
+                let settled = false;
+                const fallback = setTimeout(() => {
+                    if (!settled) {
+                        settled = true;
+                        console.warn('Firebase timeout: falling back to localStorage');
+                        saveToLocal(submissionData);
+                        showResult();
+                    }
+                }, 5000);
                 const newRef = db.ref('responses').push();
                 newRef.set(submissionData)
                     .then(() => {
-                        showResult();
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(fallback);
+                            showResult();
+                        }
                     })
                     .catch((error) => {
-                        console.error('Firebase error:', error);
-                        // 실패 시 localStorage 로 폴백
-                        saveToLocal(submissionData);
-                        showResult();
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(fallback);
+                            console.error('Firebase error:', error);
+                            // 실패 시 localStorage 로 폴백
+                            saveToLocal(submissionData);
+                            showResult();
+                        }
                     });
             } else {
                 saveToLocal(submissionData);
@@ -742,12 +759,16 @@
 
         // Admin Functions
         function openAdminModal() {
-            document.getElementById('admin-modal').classList.remove('hidden');
+            const modal = document.getElementById('admin-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
             document.getElementById('admin-password').focus();
         }
 
         function closeAdminModal() {
-            document.getElementById('admin-modal').classList.add('hidden');
+            const modal = document.getElementById('admin-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             document.getElementById('admin-password').value = '';
             document.getElementById('login-error').classList.add('hidden');
         }
@@ -769,6 +790,7 @@
             document.getElementById('header-subtitle').textContent = '관리자 대시보드';
             document.getElementById('survey-header').classList.add('hidden');
             document.getElementById('admin-header').classList.remove('hidden');
+            document.getElementById('admin-header').classList.add('flex');
             document.getElementById('progress-bar-container').classList.add('hidden');
             
             loadSurveyData();
@@ -790,6 +812,7 @@
             document.getElementById('header-subtitle').textContent = '학생용 설문지';
             document.getElementById('survey-header').classList.remove('hidden');
             document.getElementById('admin-header').classList.add('hidden');
+            document.getElementById('admin-header').classList.remove('flex');
             document.getElementById('progress-bar-container').classList.remove('hidden');
             
             Object.values(charts).forEach(chart => chart.destroy());
@@ -802,12 +825,19 @@
 
         async function loadSurveyData() {
             if (db) {
-                // Firebase 에서 로드 (리스너가 처리)
-                return;
+                // localStorage 에서도 로드 (Firebase 폴백 응답 포함)
+                const local = JSON.parse(localStorage.getItem('survey_responses') || '[]');
+                if (local.length > 0) {
+                    surveyData = local;
+                    renderDashboard();
+                    updateSystemStatus();
+                }
+                // Firebase 실시간 리스너는 enterAdminMode 에서 설정됨
             } else {
                 // localStorage 에서 로드
                 surveyData = JSON.parse(localStorage.getItem('survey_responses') || '[]');
                 renderDashboard();
+                updateSystemStatus();
             }
         }
 
@@ -1272,6 +1302,7 @@
         function generateTestData() {
             const count = parseInt(document.getElementById('test-count').value) || 10;
             
+            let lastTestData;
             for (let i = 0; i < count; i++) {
                 const testData = {
                     timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1300,14 +1331,15 @@
                 });
                 
                 surveyData.push(testData);
+                lastTestData = testData;
             }
             
             // Save to storage
             if (db) {
                 const newRef = db.ref('responses').push();
-                newRef.set(testData);
+                newRef.set(lastTestData);
             } else {
-                saveToLocal(testData);
+                saveToLocal(lastTestData);
             }
             
             renderDashboard();
