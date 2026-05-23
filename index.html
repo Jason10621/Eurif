@@ -1,1588 +1,825 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>수면·카페인·디지털 습관 연구 - Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['"Noto Sans KR"', 'sans-serif'] },
-                    colors: {
-                        bg: '#0f172a', card: '#1e293b', primary: '#6366f1', secondary: '#8b5cf6',
-                        accent: '#ec4899', success: '#10b981', warning: '#f59e0b', danger: '#ef4444',
-                        textMain: '#f8fafc', textSub: '#94a3b8'
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.5s ease-in-out',
-                        'slide-up': 'slideUp 0.5s ease-out',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            color: #f8fafc;
-            min-height: 100vh;
-        }
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .gradient-text {
-            background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            color: transparent;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            transition: all 0.3s ease;
-        }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2); }
-        .heatmap-cell { transition: all 0.2s ease; }
-        .heatmap-cell:hover { transform: scale(1.1); z-index: 10; }
-        .option-label { transition: all 0.2s ease; border: 1px solid #334155; }
-        .option-label:hover { background-color: #334155; border-color: #6366f1; }
-        input[type="radio"]:checked + .option-label {
-            background-color: #312e81; border-color: #6366f1; color: #fff;
-            box-shadow: 0 0 0 1px #6366f1;
-        }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
-        .view-section { display: none; }
-        .view-section.active { display: block; }
-        .ip-badge {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            border: 1px solid #475569;
-            font-family: 'Courier New', monospace;
-            font-size: 0.75rem;
-        }
-        .location-badge {
-            background: rgba(139, 92, 246, 0.2);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-        }
-        .time-badge {
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-        .loading-spinner {
-            border: 3px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border-top: 3px solid #6366f1;
-            width: 24px; height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Tab Styles */
-        .tab-btn {
-            transition: all 0.3s;
-            border-bottom: 2px solid transparent;
-        }
-        .tab-btn.active {
-            border-bottom-color: #6366f1;
-            color: #6366f1;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수면·카페인·디지털 습관 연구 - Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['"Noto Sans KR"','sans-serif']},colors:{bg:'#0f172a',card:'#1e293b',primary:'#6366f1',secondary:'#8b5cf6',accent:'#ec4899',success:'#10b981',warning:'#f59e0b',danger:'#ef4444',textMain:'#f8fafc',textSub:'#94a3b8'}}}}</script>
+<style>
+body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;min-height:100vh}
+.glass{background:rgba(30,41,59,0.75);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1)}
+.gtext{background:linear-gradient(135deg,#6366f1,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.scard{background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(139,92,246,.12));border:1px solid rgba(99,102,241,.3);transition:all .3s}
+.scard:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(99,102,241,.2)}
+.chart-box{position:relative;height:280px;width:100%}
+.view{display:none}.view.on{display:block}
+.tb{transition:all .3s;border-bottom:2px solid transparent}.tb.on{border-bottom-color:#6366f1;color:#6366f1}
+.ip-b{background:linear-gradient(135deg,#1e293b,#334155);border:1px solid #475569;font-family:'Courier New',monospace;font-size:.7rem}
+.loc-b{background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.3)}
+.ts-b{background:rgba(16,185,129,.2);border:1px solid rgba(16,185,129,.3)}
+@keyframes sp{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.sp{animation:sp 1s linear infinite}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fi{animation:fi .4s ease forwards}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0f172a}
+::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
+</style>
 </head>
 <body class="font-sans antialiased">
 
-    <!-- Header -->
-    <header class="fixed top-0 w-full z-50 glass-panel border-b border-slate-700/50">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
-                    <i class="fas fa-brain text-white text-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold text-white">수면·카페인·디지털 습관 연구</h1>
-                    <p class="text-xs text-textSub" id="header-subtitle">학생용 설문지</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div id="survey-header" class="flex items-center gap-3">
-                    <div class="text-xs text-textSub hidden sm:block">
-                        <span id="progress-text">0%</span> 완료
-                    </div>
-                    <button onclick="openAdminModal()" class="p-2 text-textSub hover:text-white transition" title="관리자 모드">
-                        <i class="fas fa-cog text-xl"></i>
-                    </button>
-                </div>
-                <div id="admin-header" class="hidden items-center gap-3">
-                    <div class="flex items-center gap-2 mr-4">
-                        <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
-                        <span class="text-xs text-success">실시간 연결됨</span>
-                    </div>
-                    <button onclick="refreshDashboard()" id="refresh-btn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition flex items-center gap-2">
-                        <i class="fas fa-sync-alt"></i> 새로고침
-                    </button>
-                    <button onclick="exportData()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition flex items-center gap-2">
-                        <i class="fas fa-download"></i> PDF 내보내기
-                    </button>
-                    <button onclick="exitAdmin()" class="p-2 text-textSub hover:text-white transition">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-            </div>
+<!-- HEADER -->
+<header class="fixed top-0 w-full z-50 glass border-b border-slate-700/50">
+<div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+      <i class="fas fa-brain text-white text-lg"></i>
+    </div>
+    <div>
+      <h1 class="text-lg font-bold text-white">수면·카페인·디지털 습관 연구</h1>
+      <p class="text-xs text-textSub" id="hsubt">학생용 설문지</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <div id="sh" class="flex items-center gap-2">
+      <span class="text-xs text-textSub hidden sm:block" id="ptxt">0% 완료</span>
+      <button onclick="openAM()" class="p-2 text-textSub hover:text-white transition" title="관리자"><i class="fas fa-cog text-xl"></i></button>
+    </div>
+    <div id="ah" class="hidden items-center gap-2">
+      <div class="flex items-center gap-2">
+        <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+        <span class="text-xs text-success" id="cst">실시간</span>
+      </div>
+      <button onclick="doRefresh()" id="rbtn" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition flex items-center gap-1">
+        <i class="fas fa-sync-alt"></i><span>새로고침</span>
+      </button>
+      <button onclick="exportPDF()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition">
+        <i class="fas fa-download"></i> PDF
+      </button>
+      <button onclick="exitAdmin()" class="p-2 text-textSub hover:text-white transition"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+</div>
+<div id="pbc" class="h-1 w-full bg-slate-800">
+  <div id="pb" class="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300" style="width:0%"></div>
+</div>
+</header>
+
+<!-- SURVEY -->
+<main id="sv" class="view on pt-24 pb-12 px-4 max-w-3xl mx-auto">
+  <!-- Intro -->
+  <div id="intro" class="text-center py-16 fi">
+    <div class="inline-block px-3 py-1 rounded-full bg-slate-800 text-primary text-xs font-medium mb-6 border border-slate-700">✦ 수면·카페인·디지털 습관 연구</div>
+    <h1 class="text-3xl sm:text-4xl font-bold mb-6 leading-tight">당신의 <span class="gtext">수면 패턴</span>과<br><span class="gtext">카페인 습관</span>을 분석합니다</h1>
+    <p class="text-textSub mb-8 max-w-lg mx-auto">총 19개 문항으로 구성된 설문입니다. 솔직하게 응답할수록 더 정확한 분석 결과를 받으실 수 있습니다.</p>
+    <div class="flex justify-center gap-3 mb-10 flex-wrap">
+      <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-success"></span>총 19 문항</div>
+      <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-warning"></span>소요 3~5 분</div>
+      <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary"></span>익명 처리</div>
+    </div>
+    <button onclick="startSurvey()" class="px-8 py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition transform hover:scale-105">설문 시작하기</button>
+  </div>
+
+  <!-- Form -->
+  <form id="sf" class="hidden space-y-6">
+    <div id="qc"></div>
+    <div class="pt-6 pb-20 text-center">
+      <button type="button" onclick="submitSurvey()" id="subbtn" class="w-full sm:w-auto px-12 py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition transform hover:scale-105">분석 결과 받기</button>
+      <p class="mt-4 text-xs text-textSub">제출 후 결과는 즉시 분석되어 표시됩니다.</p>
+    </div>
+  </form>
+
+  <!-- Result -->
+  <div id="rs" class="hidden text-center py-16 fi">
+    <div class="w-20 h-20 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-6">
+      <i class="fas fa-check text-3xl text-success"></i>
+    </div>
+    <h2 class="text-2xl font-bold mb-4">설문이 완료되었습니다!</h2>
+    <p class="text-textSub mb-8">소중한 의견을 보내주셔서 감사합니다.<br>데이터는 실시간으로 분석 시스템에 전송되었습니다.</p>
+    <button onclick="location.reload()" class="text-primary hover:underline">홈으로 돌아가기</button>
+  </div>
+</main>
+
+<!-- ADMIN -->
+<main id="av" class="view pt-24 pb-12 px-4 max-w-7xl mx-auto">
+  <div class="flex gap-4 mb-8 border-b border-slate-700 overflow-x-auto">
+    <button onclick="switchTab('ov')" id="t-ov" class="tb on pb-3 text-sm font-medium text-white whitespace-nowrap"><i class="fas fa-chart-pie mr-2"></i>개요 및 통계</button>
+    <button onclick="switchTab('co')" id="t-co" class="tb pb-3 text-sm font-medium text-textSub hover:text-white whitespace-nowrap"><i class="fas fa-project-diagram mr-2"></i>상관관계 분석</button>
+    <button onclick="switchTab('rd')" id="t-rd" class="tb pb-3 text-sm font-medium text-textSub hover:text-white whitespace-nowrap"><i class="fas fa-table mr-2"></i>원본 데이터</button>
+    <button onclick="switchTab('st')" id="t-st" class="tb pb-3 text-sm font-medium text-textSub hover:text-white whitespace-nowrap"><i class="fas fa-cog mr-2"></i>설정</button>
+  </div>
+
+  <!-- OV -->
+  <div id="c-ov" class="tc">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="scard rounded-2xl p-5"><p class="text-textSub text-xs mb-1">총 응답자</p><h3 class="text-3xl font-bold text-white" id="st0">0</h3><div class="text-xs text-success mt-2"><i class="fas fa-circle animate-pulse mr-1"></i>실시간 수집 중</div></div>
+      <div class="scard rounded-2xl p-5"><p class="text-textSub text-xs mb-1">평균 카페인</p><h3 class="text-3xl font-bold text-white" id="st1">-</h3><div class="w-full bg-slate-700 h-1.5 rounded-full mt-2"><div id="cafbar" class="bg-warning h-1.5 rounded-full transition-all" style="width:0%"></div></div></div>
+      <div class="scard rounded-2xl p-5"><p class="text-textSub text-xs mb-1">최빈 취침 시간</p><h3 class="text-3xl font-bold text-white" id="st2">-</h3><div class="text-xs text-textSub mt-2"><i class="fas fa-clock mr-1"></i>평일 기준</div></div>
+      <div class="scard rounded-2xl p-5"><p class="text-textSub text-xs mb-1">수면 장애 위험</p><h3 class="text-3xl font-bold text-white" id="st3">0%</h3><div class="text-xs mt-2" id="rl">-</div></div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4">카페인 섭취량 분포</h3><div class="chart-box"><canvas id="ch1"></canvas></div></div>
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4">수면 패턴 분석</h3><div class="chart-box"><canvas id="ch2"></canvas></div></div>
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4">디지털 기기 사용 패턴</h3><div class="chart-box"><canvas id="ch3"></canvas></div></div>
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4">24시간 응답 분포</h3><div class="chart-box"><canvas id="ch4"></canvas></div></div>
+    </div>
+    <div class="glass rounded-2xl p-6 mb-8">
+      <h3 class="text-base font-bold text-white mb-4">교차 분석: 카페인 섭취량 vs 수면 질</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead class="text-xs text-textSub uppercase bg-slate-800/50">
+            <tr><th class="px-4 py-3 rounded-tl-lg">카페인 그룹</th><th class="px-4 py-3">응답자 수</th><th class="px-4 py-3">평균 수면 잠복기</th><th class="px-4 py-3">수면 영향</th><th class="px-4 py-3">오전 피로도</th><th class="px-4 py-3 rounded-tr-lg">학업 영향도</th></tr>
+          </thead>
+          <tbody id="ctb" class="divide-y divide-slate-700"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CO -->
+  <div id="c-co" class="tc hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="glass rounded-2xl p-6">
+        <h3 class="text-base font-bold text-white mb-4">상관관계 히트맵</h3>
+        <div id="hmc" class="grid grid-cols-5 gap-1.5 text-xs"></div>
+        <div class="mt-3 text-xs text-textSub text-center">
+          <span class="inline-block w-3 h-3 rounded-full bg-red-500/80 mr-1"></span>양의 상관
+          <span class="inline-block w-3 h-3 rounded-full bg-blue-500/80 mr-1 ml-3"></span>음의 상관
         </div>
-        <div id="progress-bar-container" class="h-1 w-full bg-slate-800">
-            <div id="progress-bar" class="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300" style="width: 0%"></div>
+      </div>
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4">카페인 vs 수면잠복기 산점도</h3><div class="chart-box"><canvas id="ch5"></canvas></div></div>
+    </div>
+    <div class="glass rounded-2xl p-6">
+      <h3 class="text-base font-bold text-white mb-4">주요 악화 원인 분석</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="cl"></div>
+    </div>
+  </div>
+
+  <!-- RD -->
+  <div id="c-rd" class="tc hidden">
+    <div class="glass rounded-2xl p-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+        <div><h3 class="text-base font-bold text-white">상세 응답 데이터 (IP/위치/시간)</h3><p class="text-xs text-textSub mt-0.5">IP 마지막 8비트 마스킹 처리</p></div>
+        <input type="text" id="si" placeholder="검색..." class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:border-primary w-full sm:w-44" oninput="filterTbl()">
+      </div>
+      <div class="overflow-x-auto max-h-[580px]">
+        <table class="w-full text-xs text-left">
+          <thead class="text-xs text-textSub uppercase bg-slate-800/50 sticky top-0">
+            <tr>
+              <th class="px-3 py-3">ID</th><th class="px-3 py-3">IP</th><th class="px-3 py-3">위치</th>
+              <th class="px-3 py-3">제출 시간</th><th class="px-3 py-3">카페인량</th>
+              <th class="px-3 py-3">취침시간</th><th class="px-3 py-3">수면잠복기</th>
+              <th class="px-3 py-3">수면영향</th><th class="px-3 py-3">디지털</th><th class="px-3 py-3">브라우저</th>
+            </tr>
+          </thead>
+          <tbody id="rdb" class="divide-y divide-slate-700"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ST -->
+  <div id="c-st" class="tc hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- JSONBin 설정 -->
+      <div class="glass rounded-2xl p-6 md:col-span-2 border border-primary/30">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center"><i class="fas fa-database text-primary text-sm"></i></div>
+          <h3 class="text-base font-bold text-white">JSONBin.io 크로스-기기 실시간 동기화</h3>
         </div>
-    </header>
-
-    <!-- SURVEY VIEW -->
-    <main id="survey-view" class="view-section active pt-24 pb-12 px-4 max-w-3xl mx-auto">
-        <div id="intro-section" class="text-center py-16 animate-fade-in">
-            <div class="inline-block px-3 py-1 rounded-full bg-slate-800 text-primary text-xs font-medium mb-6 border border-slate-700">
-                ✦ 수면·카페인·디지털 습관 연구
-            </div>
-            <h1 class="text-3xl sm:text-4xl font-bold mb-6 leading-tight">
-                당신의 <span class="gradient-text">수면 패턴</span>과<br>
-                <span class="gradient-text">카페인 습관</span>을 분석합니다
-            </h1>
-            <p class="text-textSub mb-8 max-w-lg mx-auto">
-                총 19 개 문항으로 구성된 설문입니다. 솔직하게 응답할수록 더 정확한 분석 결과를 받으실 수 있습니다.
-            </p>
-            <div class="flex justify-center gap-3 mb-12">
-                <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-success"></span> 총 19 문항
-                </div>
-                <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-warning"></span> 소요 3~5 분
-                </div>
-                <div class="px-4 py-2 rounded-full bg-slate-800 text-xs text-textSub border border-slate-700 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-primary"></span> 익명 처리
-                </div>
-            </div>
-            <button onclick="startSurvey()" class="px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:from-primaryHover hover:to-secondaryHover text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition transform hover:scale-105">
-                설문 시작하기
-            </button>
+        <p class="text-sm text-textSub mb-4">JSONBin.io 무료 계정을 만들고 <strong class="text-white">Master Key</strong>와 <strong class="text-white">Bin ID</strong>를 입력하면 모든 기기에서 응답이 실시간으로 동기화됩니다.</p>
+        <div class="bg-slate-800/60 rounded-xl p-4 mb-4 text-xs text-textSub space-y-1.5 border border-slate-700">
+          <p class="text-white font-semibold text-sm mb-2"><i class="fas fa-list-ol mr-2 text-primary"></i>설정 방법 (3분 소요)</p>
+          <p>① <a href="https://jsonbin.io" target="_blank" class="text-primary underline">jsonbin.io</a> 에서 무료 회원가입</p>
+          <p>② 로그인 후 <span class="text-white">API Keys</span> → <span class="text-white">Master Key</span> 복사</p>
+          <p>③ <span class="text-white">Create Bin</span> 클릭 → Name: <code class="bg-slate-700 px-1 rounded">sleep-survey</code>, Private: OFF → 생성</p>
+          <p>④ 생성된 Bin의 <span class="text-white">Bin ID</span> 복사 (URL에서 확인)</p>
+          <p>⑤ 아래에 두 값을 입력하고 <span class="text-white">저장</span></p>
         </div>
-
-        <form id="survey-form" class="hidden space-y-8">
-            <div id="questions-container"></div>
-            <div class="pt-8 pb-20 text-center">
-                <button type="button" onclick="submitSurvey()" class="w-full sm:w-auto px-12 py-4 bg-gradient-to-r from-primary to-secondary hover:from-primaryHover hover:to-secondaryHover text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition transform hover:scale-105">
-                    분석 결과 받기
-                </button>
-                <p class="mt-4 text-xs text-textSub">제출 후 결과는 즉시 분석되어 표시됩니다.</p>
-            </div>
-        </form>
-
-        <div id="result-section" class="hidden text-center py-16 animate-fade-in">
-            <div class="w-20 h-20 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-check text-3xl text-success"></i>
-            </div>
-            <h2 class="text-2xl font-bold mb-4">설문이 완료되었습니다!</h2>
-            <p class="text-textSub mb-8">소중한 의견을 보내주셔서 감사합니다.<br>데이터는 실시간으로 분석 시스템에 전송되었습니다.</p>
-            <button onclick="location.reload()" class="text-primary hover:underline">홈으로 돌아가기</button>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label class="text-xs text-textSub mb-1 block">Master Key</label>
+            <input type="password" id="jbkey" placeholder="$2a$10$..." class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-xs focus:outline-none focus:border-primary">
+          </div>
+          <div>
+            <label class="text-xs text-textSub mb-1 block">Bin ID</label>
+            <input type="text" id="jbid" placeholder="6849..." class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-xs focus:outline-none focus:border-primary">
+          </div>
         </div>
-    </main>
-
-    <!-- ADMIN DASHBOARD VIEW -->
-    <main id="admin-view" class="view-section pt-24 pb-12 px-4 max-w-7xl mx-auto">
-        
-        <!-- Tabs -->
-        <div class="flex gap-6 mb-8 border-b border-slate-700">
-            <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active pb-3 text-sm font-medium text-white">
-                <i class="fas fa-chart-pie mr-2"></i>개요 및 통계
-            </button>
-            <button onclick="switchTab('correlation')" id="tab-correlation" class="tab-btn pb-3 text-sm font-medium text-textSub hover:text-white">
-                <i class="fas fa-project-diagram mr-2"></i>상관관계 분석
-            </button>
-            <button onclick="switchTab('rawdata')" id="tab-rawdata" class="tab-btn pb-3 text-sm font-medium text-textSub hover:text-white">
-                <i class="fas fa-table mr-2"></i>원본 데이터 (IP/위치)
-            </button>
-            <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn pb-3 text-sm font-medium text-textSub hover:text-white">
-                <i class="fas fa-cog mr-2"></i>설정 및 테스트
-            </button>
+        <div class="flex gap-2">
+          <button onclick="saveJBConfig()" class="px-4 py-2 bg-primary hover:bg-indigo-500 text-white text-xs rounded-lg transition"><i class="fas fa-save mr-1"></i>저장</button>
+          <button onclick="testJBConfig()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition"><i class="fas fa-vial mr-1"></i>연결 테스트</button>
+          <button onclick="pushLocalToJB()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition"><i class="fas fa-upload mr-1"></i>로컬→클라우드 업로드</button>
         </div>
+        <p id="jbst" class="mt-2 text-xs text-textSub"></p>
+      </div>
 
-        <!-- Overview Tab -->
-        <div id="content-overview" class="tab-content">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-fade-in">
-                <div class="stat-card rounded-2xl p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-textSub text-sm mb-1">총 응답자</p>
-                            <h3 class="text-3xl font-bold text-white" id="stat-total">0</h3>
-                        </div>
-                        <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                            <i class="fas fa-users text-primary"></i>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs text-success">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>실시간 수집 중</span>
-                    </div>
-                </div>
-
-                <div class="stat-card rounded-2xl p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-textSub text-sm mb-1">평균 카페인</p>
-                            <h3 class="text-3xl font-bold text-white" id="stat-caffeine">0mg</h3>
-                        </div>
-                        <div class="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
-                            <i class="fas fa-coffee text-warning"></i>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-700 h-1.5 rounded-full mt-2">
-                        <div id="caffeine-bar" class="bg-warning h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <div class="stat-card rounded-2xl p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-textSub text-sm mb-1">평균 수면 시간</p>
-                            <h3 class="text-3xl font-bold text-white" id="stat-sleep">0h</h3>
-                        </div>
-                        <div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center">
-                            <i class="fas fa-moon text-secondary"></i>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 text-xs text-textSub">
-                        <i class="fas fa-clock"></i>
-                        <span>평일 기준</span>
-                    </div>
-                </div>
-
-                <div class="stat-card rounded-2xl p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <p class="text-textSub text-sm mb-1">수면 장애 위험</p>
-                            <h3 class="text-3xl font-bold text-white" id="stat-risk">0%</h3>
-                        </div>
-                        <div class="w-10 h-10 rounded-lg bg-danger/20 flex items-center justify-center">
-                            <i class="fas fa-exclamation-triangle text-danger"></i>
-                        </div>
-                    </div>
-                    <div class="text-xs text-textSub mt-2" id="risk-level">-</div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div class="glass-panel rounded-2xl p-6 animate-slide-up">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold text-white">카페인 섭취량 분포</h3>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="caffeineChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="glass-panel rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.1s">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold text-white">수면 패턴 분석</h3>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="sleepChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="glass-panel rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.2s">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold text-white">디지털 기기 사용 패턴</h3>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="digitalChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="glass-panel rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.3s">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold text-white">24 시간 응답 분포</h3>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="hourlyChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-panel rounded-2xl p-6 mb-8 animate-slide-up" style="animation-delay: 0.4s">
-                <h3 class="text-lg font-bold text-white mb-6">교차 분석: 카페인 섭취량 vs 수면 질</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="text-xs text-textSub uppercase bg-slate-800/50">
-                            <tr>
-                                <th class="px-6 py-3 rounded-tl-lg">카페인 그룹</th>
-                                <th class="px-6 py-3">응답자 수</th>
-                                <th class="px-6 py-3">평균 수면 잠복기</th>
-                                <th class="px-6 py-3">수면 영향 체감</th>
-                                <th class="px-6 py-3">오전 피로도</th>
-                                <th class="px-6 py-3 rounded-tr-lg">학업 영향도</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cross-analysis-body" class="divide-y divide-slate-700"></tbody>
-                    </table>
-                </div>
-            </div>
+      <!-- 테스트 데이터 -->
+      <div class="glass rounded-2xl p-6">
+        <h3 class="text-base font-bold text-white mb-3">테스트 데이터 생성</h3>
+        <p class="text-sm text-textSub mb-4">가짜 응답 데이터를 생성하여 대시보드를 테스트합니다.</p>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-white">생성 개수</span>
+            <input type="number" id="tc" value="5" min="1" max="50" class="bg-slate-800 border border-slate-600 rounded px-3 py-1 text-white w-20 text-center">
+          </div>
+          <button onclick="genTestData()" class="w-full py-2 bg-primary hover:bg-indigo-500 text-white rounded-lg transition text-sm"><i class="fas fa-magic mr-2"></i>테스트 데이터 생성</button>
+          <button onclick="clearData()" class="w-full py-2 bg-danger hover:bg-red-600 text-white rounded-lg transition text-sm"><i class="fas fa-trash mr-2"></i>모든 데이터 삭제</button>
         </div>
+      </div>
 
-        <!-- Correlation Tab -->
-        <div id="content-correlation" class="tab-content hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div class="glass-panel rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-6">상관관계 히트맵</h3>
-                    <div id="heatmap-container" class="grid grid-cols-5 gap-2 text-xs"></div>
-                    <div class="mt-4 text-xs text-textSub text-center">
-                        <span class="inline-block w-3 h-3 rounded-full bg-red-500/80 mr-1"></span> 양의 상관관계
-                        <span class="inline-block w-3 h-3 rounded-full bg-blue-500/80 mr-1 ml-3"></span> 음의 상관관계
-                    </div>
-                </div>
-
-                <div class="glass-panel rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-6">카페인 vs 수면 시간 산점도</h3>
-                    <div class="chart-container">
-                        <canvas id="scatterChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-panel rounded-2xl p-6">
-                <h3 class="text-lg font-bold text-white mb-6">주요 악화 원인 분석</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="cause-list"></div>
-            </div>
+      <!-- 시스템 상태 -->
+      <div class="glass rounded-2xl p-6">
+        <h3 class="text-base font-bold text-white mb-3">시스템 상태</h3>
+        <div class="space-y-3">
+          <div class="flex justify-between py-2 border-b border-slate-700"><span class="text-sm text-textSub">JSONBin 연결</span><span id="dbs" class="text-sm text-textSub">-</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-700"><span class="text-sm text-textSub">총 응답 수</span><span id="dbc" class="text-sm text-white">0개</span></div>
+          <div class="flex justify-between py-2 border-b border-slate-700"><span class="text-sm text-textSub">마지막 응답</span><span id="lrt" class="text-sm text-white">-</span></div>
+          <div class="flex justify-between py-2"><span class="text-sm text-textSub">데이터 소스</span><span id="dsr" class="text-sm text-textSub">-</span></div>
         </div>
+      </div>
+    </div>
+  </div>
+</main>
 
-        <!-- Raw Data Tab -->
-        <div id="content-rawdata" class="tab-content hidden">
-            <div class="glass-panel rounded-2xl p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h3 class="text-lg font-bold text-white">상세 응답 데이터 (IP/위치/시간 포함)</h3>
-                        <p class="text-xs text-textSub mt-1">개인정보 보호를 위해 IP 는 마지막 8 비트를 마스킹 처리합니다</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <input type="text" id="search-input" placeholder="IP, 위치, 시간 검색..." 
-                               class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:border-primary w-64" 
-                               onkeyup="filterTable()">
-                        <select id="filter-section" onchange="renderRawDataTable()" 
-                                class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:border-primary">
-                            <option value="all">전체 섹션</option>
-                            <option value="caffeine">카페인</option>
-                            <option value="sleep">수면</option>
-                            <option value="brain">뇌파/학업</option>
-                            <option value="digital">디지털</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="overflow-x-auto max-h-[600px]">
-                    <table class="w-full text-xs text-left">
-                        <thead class="text-xs text-textSub uppercase bg-slate-800/50 sticky top-0">
-                            <tr>
-                                <th class="px-3 py-3">ID</th>
-                                <th class="px-3 py-3">IP 주소</th>
-                                <th class="px-3 py-3">위치</th>
-                                <th class="px-3 py-3">제출 시간</th>
-                                <th class="px-3 py-3">카페인량</th>
-                                <th class="px-3 py-3">취침시간</th>
-                                <th class="px-3 py-3">수면잠복기</th>
-                                <th class="px-3 py-3">수면영향</th>
-                                <th class="px-3 py-3">디지털사용</th>
-                                <th class="px-3 py-3">브라우저</th>
-                            </tr>
-                        </thead>
-                        <tbody id="raw-data-body" class="divide-y divide-slate-700"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<!-- ADMIN MODAL -->
+<div id="am" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="bg-card w-full max-w-sm rounded-2xl border border-slate-700 shadow-2xl p-8">
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-4"><i class="fas fa-lock text-xl text-white"></i></div>
+      <h2 class="text-xl font-bold text-white mb-1">관리자 인증</h2>
+      <p class="text-textSub text-xs">비밀번호를 입력하세요</p>
+    </div>
+    <div class="space-y-3">
+      <input type="password" id="ap" placeholder="비밀번호" class="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:border-primary text-center text-lg tracking-widest">
+      <button onclick="checkAdmin()" class="w-full py-3 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl transition hover:scale-[1.02]">대시보드 열기</button>
+      <p id="ae" class="text-danger text-xs text-center hidden"><i class="fas fa-exclamation-circle mr-1"></i>비밀번호가 일치하지 않습니다</p>
+    </div>
+    <div class="mt-4 text-center"><button onclick="closeAM()" class="text-textSub hover:text-white text-xs"><i class="fas fa-times mr-1"></i>닫기</button></div>
+  </div>
+</div>
 
-        <!-- Settings Tab -->
-        <div id="content-settings" class="tab-content hidden">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-6 right-6 z-[200] hidden">
+  <div class="glass rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl max-w-xs">
+    <span id="ticon" class="text-base"></span>
+    <span id="tmsg" class="text-sm text-white"></span>
+  </div>
+</div>
 
-                <!-- 크로스-기기 동기화 설정 (신규) -->
-                <div class="glass-panel rounded-2xl p-6 md:col-span-2 border border-primary/30">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                            <i class="fas fa-globe text-primary text-sm"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-white">크로스-기기 동기화 설정</h3>
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning border border-warning/30">필수 설정</span>
-                    </div>
-                    <p class="text-sm text-textSub mb-4">
-                        다른 기기에서 제출된 응답을 이 대시보드에서 보려면 <strong class="text-white">Google Apps Script 웹 앱 URL</strong>을 설정해야 합니다.<br>
-                        URL이 설정되면 대시보드 진입 시 <span class="text-success">모든 기기의 응답이 자동으로 불러와집니다.</span>
-                    </p>
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIG & STATE
+// ═══════════════════════════════════════════════════════
+const JB_BASE = 'https://api.jsonbin.io/v3/b';
+let jbKey = localStorage.getItem('jb_key') || '';
+let jbBinId = localStorage.getItem('jb_bin_id') || '';
+let allData = [];   // merged data
+let charts = {};
 
-                    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 text-xs text-textSub space-y-2 border border-slate-700">
-                        <p class="text-white font-bold text-sm mb-2"><i class="fas fa-list-ol mr-2 text-primary"></i>Google Apps Script 설정 방법</p>
-                        <p>① <a href="https://script.google.com" target="_blank" class="text-primary underline">script.google.com</a> 에서 새 프로젝트 생성</p>
-                        <p>② 아래 코드 전체를 붙여넣고 <span class="text-white">YOUR_SPREADSHEET_ID</span> 를 본인 시트 ID로 교체 후 저장:</p>
-                        <pre class="bg-slate-900 rounded p-3 text-xs text-green-300 overflow-x-auto mt-2 leading-relaxed whitespace-pre">// ★ 이 ID를 본인 Google Sheets URL의 /d/[ID]/edit 부분으로 교체
-var SHEET_ID = 'YOUR_SPREADSHEET_ID';
+// ═══════════════════════════════════════════════════════
+//  QUESTIONS
+// ═══════════════════════════════════════════════════════
+const Qs = [
+  {id:'q1',cat:'caffeine',lbl:'수면영향',txt:'카페인을 섭취한 날, 수면에 미치는 영향 (입면 지연, 수면 중간 깸 등)을 얼마나 느끼시나요?'},
+  {id:'q2',cat:'caffeine',lbl:'심박수반응',txt:'카페인 섭취 후 심장 두근거림이나 심박수 증가 현상을 어느 정도로 체감하시나요?'},
+  {id:'q3',cat:'caffeine',lbl:'각성효과',txt:'카페인 섭취 후 피로 해소나 졸음 방지 등의 각성 효과를 얼마나 체감하시나요?'},
+  {id:'q4',cat:'caffeine',lbl:'섭취량',txt:'하루 평균 카페인 총 섭취량은 대략 어느 정도인가요? (아메리카노 1잔 ≈ 150mg)'},
+  {id:'q5',cat:'caffeine',lbl:'종류',txt:'가장 자주 섭취하는 카페인 음료의 종류는 무엇인가요?'},
+  {id:'q6',cat:'caffeine',lbl:'섭취시간대',txt:'하루 중 카페인을 가장 주로 섭취하는 시간대는 언제인가요?'},
+  {id:'q7',cat:'caffeine',lbl:'타임갭',txt:'잠드는 시간 기준, 하루 중 마지막으로 카페인을 섭취하는 시점은 언제인가요?'},
+  {id:'q8',cat:'sleep',lbl:'수면잠복기',txt:'잠자리에 누운 후 실제로 잠이 들 때까지 걸리는 시간은 대략 어느 정도인가요?'},
+  {id:'q9',cat:'sleep',lbl:'평일취침',txt:'주중(평일) 기준, 주로 잠자리에 드는 시간대는 언제인가요?'},
+  {id:'q10',cat:'sleep',lbl:'기상편차',txt:'평일과 휴일의 기상 시간은 대략 어느 정도 차이가 나나요?'},
+  {id:'q11',cat:'sleep',lbl:'개선방법',txt:'수면 패턴을 정상화하거나 개선하기 위해 시도해 본 가장 주된 방법은 무엇인가요?'},
+  {id:'q12',cat:'sleep',lbl:'악화원인',txt:'본인의 수면 패턴이 악화되는 가장 큰 원인은 무엇이라고 생각하시나요?'},
+  {id:'q13',cat:'brain',lbl:'뇌파활성화',txt:'전날 수면 시간에 따라, 다음 날 두뇌 각성 상태가 얼마나 달라진다고 느끼시나요?'},
+  {id:'q14',cat:'brain',lbl:'두뇌최고점',txt:'하루 중 집중력이 가장 높고 두뇌가 가장 활발하게 움직이는 시간대는 언제인가요?'},
+  {id:'q15',cat:'brain',lbl:'오전피로',txt:'오전 수업(또는 오전 일과) 시간에 느끼는 피로도는 어느 정도인가요?'},
+  {id:'q16',cat:'brain',lbl:'학업영향',txt:'수면 부족이 본인의 학업(또는 업무) 집중도 및 성취도에 얼마나 부정적인 영향을 미친다고 생각하시나요?'},
+  {id:'q17',cat:'digital',lbl:'사용시간',txt:'학업/업무 외에, 개인적 목적으로 사용하는 하루 평균 디지털 기기 사용 시간은 얼마나 되나요?'},
+  {id:'q18',cat:'digital',lbl:'야간모드',txt:'야간에 디지털 기기를 사용할 때, 야간 모드나 다크 모드를 얼마나 자주 사용하시나요?'},
+  {id:'q19',cat:'digital',lbl:'야간키워드',txt:'심야(밤 11시 이후)에 온라인 커뮤니티/SNS 활동 시, 가장 주로 소비하는 콘텐츠는 무엇인가요?'}
+];
 
-function doPost(e) {
+const Opts = {
+  q1:['전혀 느끼지 않는다','거의 느끼지 않는다','보통이다','어느 정도 느낀다','매우 심하게 느낀다'],
+  q2:['전혀 변화 없음','미세하게 증가함','약간의 두근거림','뚜렷하게 두근거림','심장이 매우 빠르고 강하게 뜀'],
+  q3:['전혀 효과가 없다','거의 효과가 없다','일시적인 효과가 있다','확실히 효과가 있다','매우 큰 효과가 있다'],
+  q4:['전혀 섭취하지 않음 (0mg)','1잔 미만 (1~100mg)','1~2잔 정도 (100~300mg)','3~4잔 정도 (300~500mg)','5잔 이상 (500mg 초과)'],
+  q5:['마시지 않음','커피류','고카페인 에너지 드링크류','탄산음료','차 종류 및 기타'],
+  q6:['섭취하지 않음','이른 오전','늦은 오전 ~ 점심','오후','저녁 및 심야'],
+  q7:['섭취하지 않음','취침 12시간 이상 전','취침 6~12시간 사이','취침 3~6시간 사이','취침 3시간 이내'],
+  q8:['10분 미만','10~30분','30분~1시간','1~2시간','2시간 이상'],
+  q9:['밤 10시 이전','밤 10시~자정','자정~새벽 2시','새벽 2~4시','새벽 4시 이후'],
+  q10:['차이 없음','1시간 정도','2시간 정도','3시간 정도','4시간 이상'],
+  q11:['시도해 본 적 없음','생활 습관 교정','수면 환경 개선','전자기기 사용 제한','의학 및 보조제 도움'],
+  q12:['불규칙한 생활 습관','전자기기 사용','학업/업무 과로','심리적 요인','환경/신체적 요인'],
+  q13:['전혀 달라지지 않는다','거의 달라지지 않는다','보통이다','꽤 많이 달라진다','매우 크게 달라진다'],
+  q14:['새벽~이른 아침','오전','오후','저녁','심야'],
+  q15:['전혀 피로하지 않다','별로 피로하지 않다','보통이다','꽤 피로하다','매우 피로하다'],
+  q16:['전혀 영향을 미치지 않는다','거의 영향을 미치지 않는다','보통이다','꽤 큰 영향을 미친다','매우 치명적인 영향을 미친다'],
+  q17:['1시간 미만','1~3시간','3~5시간','5~7시간','7시간 이상'],
+  q18:['전혀 사용하지 않는다','거의 사용하지 않는다','가끔 사용한다','자주 사용한다','항상 켜두고 사용한다'],
+  q19:['야간에 활동하지 않음','유머/엔터테인먼트','일상/공감/소통','취미/관심사','학업/정보 탐색']
+};
+
+const CatLabels = {
+  caffeine:'섹션 1 · 카페인 섭취 및 신체 반응',
+  sleep:'섹션 2 · 수면 패턴 및 위상 분석',
+  brain:'섹션 3 · 뇌파/두뇌 활성화 및 학업 영향',
+  digital:'섹션 4 · 디지털 기기 사용 및 야간 활동'
+};
+
+// ═══════════════════════════════════════════════════════
+//  JSONBIN API
+// ═══════════════════════════════════════════════════════
+async function jbRead() {
+  if (!jbKey || !jbBinId) return null;
   try {
-    var sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
-    var data = JSON.parse(e.postData.contents);
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(['제출시간','도시','IP','ISP','UA','q1','q2','q3','q4',
-        'q5','q6','q7','q8','q9','q10','q11','q12','q13','q14','q15','q16',
-        'q17','q18','q19','isTest']);
-    }
-    var r = data.responses || {};
-    var getA = function(q){ return r[q] ? r[q].answerIndex : 0; };
-    var getT = function(q){ return r[q] ? r[q].answerText : ''; };
-    sheet.appendRow([
-      data.timestamp,
-      (data.clientInfo||{}).city||'',
-      (data.clientInfo||{}).maskedIp||'',
-      (data.clientInfo||{}).isp||'',
-      (data.userAgent||'').substring(0,80),
-      getA('q1'),getA('q2'),getA('q3'),getA('q4'),getA('q5'),getA('q6'),getA('q7'),
-      getA('q8'),getA('q9'),getA('q10'),getA('q11'),getA('q12'),getA('q13'),getA('q14'),
-      getA('q15'),getA('q16'),getA('q17'),getA('q18'),getA('q19'),
-      data.isTest ? 'TEST' : ''
-    ]);
-    return ContentService.createTextOutput(JSON.stringify({status:'ok'}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({status:'error',msg:err.message}))
-      .setMimeType(ContentService.MimeType.JSON);
+    const r = await fetch(`${JB_BASE}/${jbBinId}/latest`, {
+      headers: {'X-Master-Key': jbKey}
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.record?.responses || [];
+  } catch { return null; }
+}
+
+async function jbWrite(arr) {
+  if (!jbKey || !jbBinId) return false;
+  try {
+    const r = await fetch(`${JB_BASE}/${jbBinId}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json','X-Master-Key':jbKey},
+      body: JSON.stringify({responses: arr})
+    });
+    return r.ok;
+  } catch { return false; }
+}
+
+// ═══════════════════════════════════════════════════════
+//  LOCAL STORAGE
+// ═══════════════════════════════════════════════════════
+function lsGet() { return JSON.parse(localStorage.getItem('sv_res') || '[]'); }
+function lsAdd(e) { const a=lsGet(); a.push(e); localStorage.setItem('sv_res', JSON.stringify(a)); }
+function lsClear() { localStorage.removeItem('sv_res'); }
+
+// ═══════════════════════════════════════════════════════
+//  MERGE DATA (JB + local)
+// ═══════════════════════════════════════════════════════
+async function loadAllData() {
+  const local = lsGet();
+  const jb = await jbRead();
+
+  if (jb !== null) {
+    // JB가 연결됨: JB 기준, 로컬에만 있는 것 추가
+    const jbTs = new Set(jb.map(d=>d.timestamp));
+    const localOnly = local.filter(d=>!jbTs.has(d.timestamp));
+    allData = [...jb, ...localOnly].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+    updateSysStatus(true, 'JSONBin.io');
+  } else {
+    // JB 없음: 로컬만
+    allData = local.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+    updateSysStatus(false, '로컬 저장소');
   }
 }
 
-function doGet(e) {
-  try {
-    var sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
-    var rows = sheet.getDataRange().getValues();
-    if (rows.length <= 1) {
-      return ContentService.createTextOutput(JSON.stringify([]))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    var qIds = ['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10',
-                'q11','q12','q13','q14','q15','q16','q17','q18','q19'];
-    var qTexts = ['수면영향','심박수반응','각성효과','섭취량','종류','섭취시간대','타임갭',
-                  '수면잠복기','평일취침','기상편차','개선방법','악화원인','뇌파활성화',
-                  '두뇌최고점','오전피로','학업영향','사용시간','야간모드','야간키워드'];
-    var optMap = {
-      q1:['전혀 느끼지 않는다','거의 느끼지 않는다','보통이다','어느 정도 느낀다','매우 심하게 느낀다'],
-      q2:['전혀 변화 없음','미세하게 증가함을 느낌','약간의 두근거림을 느낌','뚜렷하게 두근거림을 느낌','심장이 매우 빠르고 강하게 뜀'],
-      q3:['전혀 효과가 없다','거의 효과가 없다','일시적인 효과가 있다','확실히 효과가 있다','매우 큰 효과가 있다'],
-      q4:['전혀 섭취하지 않음 (0mg)','1 잔 미만 (1~100mg)','1~2 잔 정도 (100~300mg)','3~4 잔 정도 (300~500mg)','5 잔 이상 (500mg 초과)'],
-      q5:['마시지 않음','커피류','고카페인 에너지 드링크류','탄산음료','차 종류 및 기타'],
-      q6:['섭취하지 않음','이른 오전','늦은 오전 ~ 점심','오후','저녁 및 심야'],
-      q7:['섭취하지 않음','취침 12 시간 이상 전','취침 6~12 시간 사이','취침 3~6 시간 사이','취침 3 시간 이내'],
-      q8:['10 분 미만','10~30 분','30 분~1 시간','1~2 시간','2 시간 이상'],
-      q9:['밤 10 시 이전','밤 10 시~자정','자정~새벽 2 시','새벽 2~4 시','새벽 4 시 이후'],
-      q10:['차이 없음','1 시간 정도','2 시간 정도','3 시간 정도','4 시간 이상'],
-      q11:['시도해 본 적 없음','생활 습관 교정','수면 환경 개선','전자기기 사용 제한','의학 및 보조제 도움'],
-      q12:['불규칙한 생활 습관','전자기기 사용','학업/업무 과로','심리적 요인','환경/신체적 요인'],
-      q13:['전혀 달라지지 않는다','거의 달라지지 않는다','보통이다','꽤 많이 달라진다','매우 크게 달라진다'],
-      q14:['새벽~이른 아침','오전','오후','저녁','심야'],
-      q15:['전혀 피로하지 않다','별로 피로하지 않다','보통이다','꽤 피로하다','매우 피로하다'],
-      q16:['전혀 영향을 미치지 않는다','거의 영향을 미치지 않는다','보통이다','꽤 큰 영향을 미친다','매우 치명적인 영향을 미친다'],
-      q17:['1 시간 미만','1~3 시간','3~5 시간','5~7 시간','7 시간 이상'],
-      q18:['전혀 사용하지 않는다','거의 사용하지 않는다','가끔 사용한다','자주 사용한다','항상 켜두고 사용한다'],
-      q19:['야간에 활동하지 않음','유머/엔터테인먼트','일상/공감/소통','취미/관심사','학업/정보 탐색']
-    };
-    var result = [];
-    for (var i = 1; i < rows.length; i++) {
-      var row = rows[i];
-      var responses = {};
-      for (var j = 0; j < qIds.length; j++) {
-        var idx = parseInt(row[5 + j]) || 0;
-        responses[qIds[j]] = {
-          question: qTexts[j],
-          answerIndex: idx,
-          answerText: idx >= 1 && idx <= 5 ? optMap[qIds[j]][idx-1] : ''
-        };
-      }
-      result.push({
-        timestamp: row[0] ? new Date(row[0]).toISOString() : '',
-        clientInfo: { city: row[1]||'', maskedIp: row[2]||'', isp: row[3]||'' },
-        userAgent: row[4]||'',
-        responses: responses,
-        isTest: row[24] === 'TEST',
-        _source: 'gas'
-      });
-    }
-    return ContentService.createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({error:err.message}))
-      .setMimeType(ContentService.MimeType.JSON);
+function updateSysStatus(connected, src) {
+  const ds = document.getElementById('dbs');
+  const dsr = document.getElementById('dsr');
+  if (ds) ds.innerHTML = connected
+    ? '<i class="fas fa-check-circle text-success mr-1"></i><span class="text-success">연결됨</span>'
+    : '<i class="fas fa-exclamation-triangle text-warning mr-1"></i><span class="text-warning">미연결 (로컬)</span>';
+  if (dsr) dsr.textContent = src;
+  document.getElementById('dbc').textContent = allData.length + '개';
+  if (allData.length > 0) {
+    document.getElementById('lrt').textContent = new Date(allData[allData.length-1].timestamp).toLocaleString('ko-KR');
   }
-}</pre>
-                        <p>③ <span class="text-white">배포 → 새 배포 → 웹 앱</span>, 실행 계정: <span class="text-white">나</span>, 액세스: <span class="text-white">모든 사용자</span> → 배포</p>
-                        <p>④ 생성된 웹 앱 URL을 아래에 입력 후 저장</p>
-                    </div>
-
-                    <div class="flex gap-3 items-center">
-                        <input type="url" id="gas-webhook-input" placeholder="https://script.google.com/macros/s/..." 
-                               value="" 
-                               class="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-primary transition">
-                        <button onclick="saveGasWebhook()" class="px-4 py-2 bg-primary hover:bg-indigo-500 text-white text-sm rounded-lg transition whitespace-nowrap">
-                            <i class="fas fa-save mr-1"></i>저장
-                        </button>
-                        <button onclick="testGasWebhook()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition whitespace-nowrap">
-                            <i class="fas fa-vial mr-1"></i>연결 테스트
-                        </button>
-                    </div>
-                    <p id="gas-status" class="mt-2 text-xs text-textSub"></p>
-                </div>
-
-                <div class="glass-panel rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">테스트 데이터 생성</h3>
-                    <p class="text-sm text-textSub mb-4">관리자 모드에서 테스트용 가짜 데이터를 생성할 수 있습니다. 실제 응답과 구분됩니다.</p>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-white">생성할 데이터 개수</span>
-                            <input type="number" id="test-count" value="10" min="1" max="100" class="bg-slate-800 border border-slate-600 rounded px-3 py-1 text-white w-20 text-center">
-                        </div>
-                        <button onclick="generateTestData()" class="w-full py-2 bg-primary hover:bg-primaryHover text-white rounded-lg transition">
-                            <i class="fas fa-magic mr-2"></i>테스트 데이터 생성
-                        </button>
-                        <button onclick="clearAllData()" class="w-full py-2 bg-danger hover:bg-red-600 text-white rounded-lg transition">
-                            <i class="fas fa-trash mr-2"></i>모든 데이터 삭제
-                        </button>
-                    </div>
-                </div>
-
-                <div class="glass-panel rounded-2xl p-6">
-                    <h3 class="text-lg font-bold text-white mb-4">시스템 상태</h3>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center py-2 border-b border-slate-700">
-                            <span class="text-sm text-textSub">데이터베이스 연결</span>
-                            <span class="text-sm text-success" id="db-status"><i class="fas fa-check-circle mr-1"></i>연결됨</span>
-                        </div>
-                        <div class="flex justify-between items-center py-2 border-b border-slate-700">
-                            <span class="text-sm text-textSub">총 저장된 응답</span>
-                            <span class="text-sm text-white" id="db-count">0 개</span>
-                        </div>
-                        <div class="flex justify-between items-center py-2 border-b border-slate-700">
-                            <span class="text-sm text-textSub">마지막 응답 시간</span>
-                            <span class="text-sm text-white" id="last-response">-</span>
-                        </div>
-                        <div class="flex justify-between items-center py-2">
-                            <span class="text-sm text-textSub">데이터 동기화</span>
-                            <span class="text-sm" id="sync-status"><i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Admin Login Modal -->
-    <div id="admin-modal" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
-        <div class="bg-card w-full max-w-md rounded-2xl border border-slate-700 shadow-2xl p-8">
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <i class="fas fa-lock text-2xl text-white"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-white mb-2">관리자 인증</h2>
-                <p class="text-textSub text-sm">대시보드 접근을 위한 비밀번호를 입력하세요</p>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <input type="password" id="admin-password" placeholder="비밀번호" 
-                           class="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition text-center text-lg tracking-widest">
-                </div>
-                <button onclick="checkAdmin()" class="w-full py-3 bg-gradient-to-r from-primary to-secondary hover:from-primaryHover hover:to-secondaryHover text-white font-bold rounded-xl shadow-lg shadow-primary/25 transition transform hover:scale-[1.02]">
-                    대시보드 열기
-                </button>
-                <p id="login-error" class="text-danger text-sm text-center hidden">
-                    <i class="fas fa-exclamation-circle mr-1"></i> 비밀번호가 일치하지 않습니다
-                </p>
-            </div>
-            
-            <div class="mt-6 text-center">
-                <button onclick="closeAdminModal()" class="text-textSub hover:text-white text-sm transition">
-                    <i class="fas fa-times mr-1"></i> 닫기
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Firebase 는 실제 프로젝트 설정이 없으므로 비활성화
-        // 크로스-기기 저장은 Google Apps Script 웹훅을 통해 처리
-        let db = null;
-
-        // Google Apps Script 웹훅 URL (설정 탭에서 입력 가능)
-        let gasWebhookUrl = localStorage.getItem('gas_webhook_url') || '';
-
-        // Questions Data
-        const questions = [
-            { id: 'q1', category: 'caffeine', question: '수면영향', options: 5, text: '카페인을 섭취한 날, 수면에 미치는 영향 (입면 지연, 수면 중간 깸 등) 을 얼마나 느끼시나요?' },
-            { id: 'q2', category: 'caffeine', question: '심박수반응', options: 5, text: '카페인 섭취 후 심장 두근거림이나 심박수 증가 현상을 어느 정도로 체감하시나요?' },
-            { id: 'q3', category: 'caffeine', question: '각성효과', options: 5, text: '카페인 섭취 후 피로 해소나 졸음 방지 등의 각성 효과를 실제로 얼마나 체감하시나요?' },
-            { id: 'q4', category: 'caffeine', question: '섭취량', options: 5, text: '하루 평균 카페인 총 섭취량은 대략 어느 정도인가요? (아메리카노 1 잔 = 약 150mg 기준)', values: [0, 50, 200, 400, 500] },
-            { id: 'q5', category: 'caffeine', question: '종류', options: 5, text: '가장 자주 섭취하는 카페인 음료의 종류는 무엇인가요?' },
-            { id: 'q6', category: 'caffeine', question: '섭취시간대', options: 5, text: '하루 중 카페인을 가장 주로 섭취하는 시간대는 언제인가요?' },
-            { id: 'q7', category: 'caffeine', question: '타임갭', options: 5, text: '잠드는 시간을 기준으로, 하루 중 마지막으로 카페인을 섭취하는 시점은 언제인가요?' },
-            { id: 'q8', category: 'sleep', question: '수면잠복기', options: 5, text: '잠자리에 누운 후 실제로 잠이 들 때까지 걸리는 시간은 대략 어느 정도인가요?', values: [5, 20, 45, 90, 120] },
-            { id: 'q9', category: 'sleep', question: '평일취침', options: 5, text: '주중 (평일) 을 기준으로, 주로 잠자리에 드는 시간대는 언제인가요?', values: [22, 23, 1, 3, 5] },
-            { id: 'q10', category: 'sleep', question: '기상편차', options: 5, text: '주중 (평일) 과 휴일 (주말) 의 기상 시간은 대략 어느 정도 차이가 나나요?' },
-            { id: 'q11', category: 'sleep', question: '개선방법', options: 5, text: '수면 패턴 (수면위상) 을 정상화하거나 개선하기 위해 시도해 본 가장 주된 방법은 무엇인가요?' },
-            { id: 'q12', category: 'sleep', question: '악화원인', options: 5, text: '본인의 수면 패턴이 악화되는 (망가지는) 가장 큰 원인은 무엇이라고 생각하시나요?' },
-            { id: 'q13', category: 'brain', question: '뇌파활성화', options: 5, text: '전날 수면 시간의 많고 적음에 따라, 다음 날 두뇌의 각성 (머리가 맑아지거나 집중되는 정도) 상태가 얼마나 달라진다고 느끼시나요?' },
-            { id: 'q14', category: 'brain', question: '두뇌최고점', options: 5, text: '하루 중 집중력이 가장 높고 두뇌가 가장 활발하게 움직인다고 체감하는 시간대는 언제인가요?' },
-            { id: 'q15', category: 'brain', question: '오전피로', options: 5, text: '오전 수업 (또는 오전 일과) 시간에 느끼는 피로도는 어느 정도인가요?' },
-            { id: 'q16', category: 'brain', question: '학업영향', options: 5, text: '수면 부족이 본인의 학업 (또는 업무) 집중도 및 성취도에 얼마나 부정적인 영향을 미친다고 생각하시나요?' },
-            { id: 'q17', category: 'digital', question: '사용시간', options: 5, text: '학업이나 업무 외에, 개인적인 목적 (여가 등) 으로 사용하는 하루 평균 디지털 기기 (스마트폰, 태블릿, PC 등) 사용 시간은 얼마나 되나요?', values: [0.5, 2, 4, 6, 8] },
-            { id: 'q18', category: 'digital', question: '야간모드', options: 5, text: '야간에 디지털 기기를 사용할 때, 야간 모드나 다크 모드 등 블루라이트 차단 기능을 얼마나 자주 사용하시나요?' },
-            { id: 'q19', category: 'digital', question: '야간키워드', options: 5, text: '심야 시간 (밤 11 시 이후) 에 온라인 커뮤니티나 SNS 활동을 할 때, 가장 주로 소비하거나 검색하는 키워드 (주제) 는 무엇인가요?' }
-        ];
-
-        const questionOptions = {
-            q1: ['전혀 느끼지 않는다', '거의 느끼지 않는다', '보통이다', '어느 정도 느낀다', '매우 심하게 느낀다'],
-            q2: ['전혀 변화 없음', '미세하게 증가함을 느낌', '약간의 두근거림을 느낌', '뚜렷하게 두근거림을 느낌', '심장이 매우 빠르고 강하게 뜀'],
-            q3: ['전혀 효과가 없다', '거의 효과가 없다', '일시적인 효과가 있다', '확실히 효과가 있다', '매우 큰 효과가 있다'],
-            q4: ['전혀 섭취하지 않음 (0mg)', '1 잔 미만 (1~100mg)', '1~2 잔 정도 (100~300mg)', '3~4 잔 정도 (300~500mg)', '5 잔 이상 (500mg 초과)'],
-            q5: ['마시지 않음', '커피류', '고카페인 에너지 드링크류', '탄산음료', '차 종류 및 기타'],
-            q6: ['섭취하지 않음', '이른 오전', '늦은 오전 ~ 점심', '오후', '저녁 및 심야'],
-            q7: ['섭취하지 않음', '취침 12 시간 이상 전', '취침 6~12 시간 사이', '취침 3~6 시간 사이', '취침 3 시간 이내'],
-            q8: ['10 분 미만', '10~30 분', '30 분~1 시간', '1~2 시간', '2 시간 이상'],
-            q9: ['밤 10 시 이전', '밤 10 시~자정', '자정~새벽 2 시', '새벽 2~4 시', '새벽 4 시 이후'],
-            q10: ['차이 없음', '1 시간 정도', '2 시간 정도', '3 시간 정도', '4 시간 이상'],
-            q11: ['시도해 본 적 없음', '생활 습관 교정', '수면 환경 개선', '전자기기 사용 제한', '의학 및 보조제 도움'],
-            q12: ['불규칙한 생활 습관', '전자기기 사용', '학업/업무 과로', '심리적 요인', '환경/신체적 요인'],
-            q13: ['전혀 달라지지 않는다', '거의 달라지지 않는다', '보통이다', '꽤 많이 달라진다', '매우 크게 달라진다'],
-            q14: ['새벽~이른 아침', '오전', '오후', '저녁', '심야'],
-            q15: ['전혀 피로하지 않다', '별로 피로하지 않다', '보통이다', '꽤 피로하다', '매우 피로하다'],
-            q16: ['전혀 영향을 미치지 않는다', '거의 영향을 미치지 않는다', '보통이다', '꽤 큰 영향을 미친다', '매우 치명적인 영향을 미친다'],
-            q17: ['1 시간 미만', '1~3 시간', '3~5 시간', '5~7 시간', '7 시간 이상'],
-            q18: ['전혀 사용하지 않는다', '거의 사용하지 않는다', '가끔 사용한다', '자주 사용한다', '항상 켜두고 사용한다'],
-            q19: ['야간에 활동하지 않음', '유머/엔터테인먼트', '일상/공감/소통', '취미/관심사', '학업/정보 탐색']
-        };
-
-        let charts = {};
-        let surveyData = [];
-        let currentTab = 'overview';
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            renderQuestions();
-            updateProgress();
-            loadSurveyData();
-        });
-
-        function renderQuestions() {
-            const container = document.getElementById('questions-container');
-            let html = '';
-
-            const categories = {
-                caffeine: '섹션 1 · 카페인 섭취 및 신체 반응',
-                sleep: '섹션 2 · 수면 패턴 및 위상 분석',
-                brain: '섹션 3 · 뇌파/두뇌 활성화 및 학업 영향',
-                digital: '섹션 4 · 디지털 기기 사용 및 야간 활동'
-            };
-
-            let currentCategory = '';
-            questions.forEach((q, index) => {
-                if (q.category !== currentCategory) {
-                    currentCategory = q.category;
-                    html += `
-                        <div class="flex items-center gap-3 my-8">
-                            <div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
-                            <span class="text-sm font-medium text-primary px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-                                ${categories[q.category]}
-                            </span>
-                            <div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
-                        </div>
-                    `;
-                }
-
-                html += `
-                    <div class="bg-card rounded-2xl p-6 border border-slate-700 shadow-lg animate-slide-up" style="animation-delay: ${index * 0.05}s">
-                        <div class="flex items-center gap-3 mb-4">
-                            <span class="px-2 py-1 rounded bg-slate-700 text-xs font-bold text-primary">${q.id.toUpperCase()}</span>
-                            <span class="text-xs text-textSub border border-slate-600 px-2 py-0.5 rounded-full">${q.question}</span>
-                        </div>
-                        <h3 class="text-lg font-bold text-white mb-6 leading-snug">${q.text}</h3>
-                        
-                        <div class="space-y-3">
-                            ${questionOptions[q.id].map((opt, i) => `
-                                <label class="flex items-start gap-3 cursor-pointer group">
-                                    <div class="relative flex items-center">
-                                        <input type="radio" name="${q.id}" value="${i+1}" class="peer sr-only" onchange="updateProgress()">
-                                        <div class="w-5 h-5 rounded-full border-2 border-slate-500 peer-checked:border-primary peer-checked:bg-primary transition-all"></div>
-                                        <div class="absolute inset-0 rounded-full bg-primary/20 scale-0 peer-checked:scale-100 transition-transform"></div>
-                                    </div>
-                                    <span class="text-sm text-slate-300 group-hover:text-white transition-colors pt-0.5">${opt}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function startSurvey() {
-            document.getElementById('intro-section').classList.add('hidden');
-            document.getElementById('survey-form').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function updateProgress() {
-            const total = questions.length;
-            const answered = questions.filter(q => document.querySelector(`input[name="${q.id}"]:checked`)).length;
-            const percent = Math.round((answered / total) * 100);
-            
-            document.getElementById('progress-bar').style.width = `${percent}%`;
-            document.getElementById('progress-text').innerText = `${percent}%`;
-        }
-
-        // IP and Location Detection
-        async function getClientInfo() {
-            try {
-                // IP 주소 가져오기
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                const ip = ipData.ip;
-                
-                // 위치 정보 가져오기 (ipapi.co 무료 API)
-                const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-                const locationData = await locationResponse.json();
-                
-                return {
-                    ip: ip,
-                    maskedIp: ip.split('.').slice(0, 3).join('.') + '.***', // 개인정보 보호를 위해 마지막 8 비트 마스킹
-                    city: locationData.city || 'Unknown',
-                    country: locationData.country_name || 'Unknown',
-                    region: locationData.region || 'Unknown',
-                    timezone: locationData.timezone || 'Unknown',
-                    isp: locationData.org || 'Unknown'
-                };
-            } catch (e) {
-                console.error('IP detection error:', e);
-                return {
-                    ip: 'Unknown',
-                    maskedIp: '***.***.***.***',
-                    city: 'Unknown',
-                    country: 'Unknown',
-                    region: 'Unknown',
-                    timezone: 'Unknown',
-                    isp: 'Unknown'
-                };
-            }
-        }
-
-        async function submitSurvey() {
-            const unanswered = questions.filter(q => !document.querySelector(`input[name="${q.id}"]:checked`));
-            if (unanswered.length > 0) {
-                alert(`아직 답변하지 않은 문항이 ${unanswered.length}개 있습니다.`);
-                const firstUnansweredId = unanswered[0].id;
-                const element = document.querySelector(`input[name="${firstUnansweredId}"]`)?.closest('.bg-card');
-                if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    element.classList.add('ring-2', 'ring-red-500');
-                    setTimeout(() => element.classList.remove('ring-2', 'ring-red-500'), 2000);
-                }
-                return;
-            }
-
-            if (!confirm('제출하시겠습니까?')) return;
-
-            // 클라이언트 정보 수집
-            const clientInfo = await getClientInfo();
-            
-            const responseData = {};
-            questions.forEach(q => {
-                const val = document.querySelector(`input[name="${q.id}"]:checked`).value;
-                responseData[q.id] = {
-                    question: q.text,
-                    category: q.category,
-                    answerIndex: parseInt(val),
-                    answerText: questionOptions[q.id][parseInt(val)-1]
-                };
-            });
-
-            const submissionData = {
-                timestamp: new Date().toISOString(),
-                responses: responseData,
-                clientInfo: clientInfo,
-                userAgent: navigator.userAgent,
-                screenResolution: `${screen.width}x${screen.height}`,
-                isTest: false
-            };
-
-            // Google Apps Script 웹훅 또는 localStorage 에 저장
-            if (gasWebhookUrl) {
-                try {
-                    // GAS 는 CORS 헤더를 반환하지 않으므로 no-cors 로 전송
-                    // 응답 본문은 읽을 수 없지만 GAS 서버에는 정상 수신됨
-                    await fetch(gasWebhookUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(submissionData)
-                    });
-                } catch (e) {
-                    console.error('GAS webhook error:', e);
-                }
-            }
-            // 항상 localStorage 에도 저장 (이 기기에서 관리자 확인 용도)
-            saveToLocal(submissionData);
-            showResult();
-        }
-
-        function saveToLocal(data) {
-            const existing = JSON.parse(localStorage.getItem('survey_responses') || '[]');
-            existing.push(data);
-            localStorage.setItem('survey_responses', JSON.stringify(existing));
-        }
-
-        function showResult() {
-            document.getElementById('survey-form').classList.add('hidden');
-            document.getElementById('result-section').classList.remove('hidden');
-            document.querySelector('header').classList.add('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        // Admin Functions
-        function openAdminModal() {
-            const modal = document.getElementById('admin-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.getElementById('admin-password').focus();
-        }
-
-        function closeAdminModal() {
-            const modal = document.getElementById('admin-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.getElementById('admin-password').value = '';
-            document.getElementById('login-error').classList.add('hidden');
-        }
-
-        function checkAdmin() {
-            const pwd = document.getElementById('admin-password').value;
-            if (pwd === 'admin') {
-                closeAdminModal();
-                enterAdminMode();
-            } else {
-                document.getElementById('login-error').classList.remove('hidden');
-                document.getElementById('admin-password').value = '';
-            }
-        }
-
-        function enterAdminMode() {
-            document.getElementById('survey-view').classList.remove('active');
-            document.getElementById('admin-view').classList.add('active');
-            document.getElementById('header-subtitle').textContent = '관리자 대시보드';
-            document.getElementById('survey-header').classList.add('hidden');
-            document.getElementById('admin-header').classList.remove('hidden');
-            document.getElementById('admin-header').classList.add('flex');
-            document.getElementById('progress-bar-container').classList.add('hidden');
-            
-            loadSurveyData();
-        }
-
-        function exitAdmin() {
-            document.getElementById('admin-view').classList.remove('active');
-            document.getElementById('survey-view').classList.add('active');
-            document.getElementById('header-subtitle').textContent = '학생용 설문지';
-            document.getElementById('survey-header').classList.remove('hidden');
-            document.getElementById('admin-header').classList.add('hidden');
-            document.getElementById('admin-header').classList.remove('flex');
-            document.getElementById('progress-bar-container').classList.remove('hidden');
-            
-            Object.values(charts).forEach(chart => chart.destroy());
-            charts = {};
-        }
-
-        function saveGasWebhook() {
-            const url = document.getElementById('gas-webhook-input').value.trim();
-            gasWebhookUrl = url;
-            localStorage.setItem('gas_webhook_url', url);
-            const statusEl = document.getElementById('gas-status');
-            const syncEl = document.getElementById('sync-status');
-            if (url) {
-                statusEl.textContent = '✓ URL이 저장되었습니다. 대시보드 새로고침 시 모든 기기 응답이 불러와집니다.';
-                statusEl.className = 'mt-2 text-xs text-success';
-                syncEl.innerHTML = '<i class="fas fa-sync-alt mr-1 text-success"></i><span class="text-success">웹훅 연결됨</span>';
-            } else {
-                statusEl.textContent = 'URL이 비워졌습니다. 크로스-기기 동기화가 비활성화됩니다.';
-                statusEl.className = 'mt-2 text-xs text-warning';
-                syncEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span>';
-            }
-        }
-
-        async function testGasWebhook() {
-            const url = document.getElementById('gas-webhook-input').value.trim();
-            const statusEl = document.getElementById('gas-status');
-            if (!url) {
-                statusEl.textContent = '먼저 URL을 입력하세요.';
-                statusEl.className = 'mt-2 text-xs text-warning';
-                return;
-            }
-            statusEl.textContent = '연결 테스트 중...';
-            statusEl.className = 'mt-2 text-xs text-textSub';
-            // 임시로 gasWebhookUrl 을 테스트 URL 로 설정해 fetchFromGAS 호출
-            const prevUrl = gasWebhookUrl;
-            gasWebhookUrl = url;
-            const data = await fetchFromGAS();
-            gasWebhookUrl = prevUrl;
-            if (data.length >= 0) {
-                statusEl.textContent = '✓ 연결 성공! 현재 GAS에 저장된 응답: ' + data.length + '건';
-                statusEl.className = 'mt-2 text-xs text-success';
-            } else {
-                statusEl.textContent = '✗ 연결 실패. GAS 배포 설정(액세스: 모든 사용자)을 확인하세요.';
-                statusEl.className = 'mt-2 text-xs text-danger';
-            }
-        }
-
-        // JSONP 방식으로 GAS doGet 호출 — fetch 는 GAS CORS 헤더 부재로 차단되므로
-        // <script> 태그 인젝션을 이용해 크로스-도메인 GET 요청을 우회함
-        function fetchFromGAS() {
-            return new Promise(function(resolve) {
-                if (!gasWebhookUrl) { resolve([]); return; }
-                var cbName = '__gasCb_' + Date.now();
-                var script = document.createElement('script');
-                var timer = setTimeout(function() {
-                    cleanup();
-                    console.error('GAS JSONP timeout');
-                    resolve([]);
-                }, 10000);
-                function cleanup() {
-                    clearTimeout(timer);
-                    delete window[cbName];
-                    if (script.parentNode) script.parentNode.removeChild(script);
-                }
-                window[cbName] = function(data) {
-                    cleanup();
-                    resolve(Array.isArray(data) ? data : []);
-                };
-                script.src = gasWebhookUrl + '?callback=' + cbName + '&t=' + Date.now();
-                script.onerror = function() { cleanup(); resolve([]); };
-                document.head.appendChild(script);
-            });
-        }
-
-        async function loadSurveyData() {
-            // 1. localStorage 응답 로드
-            const local = JSON.parse(localStorage.getItem('survey_responses') || '[]');
-
-            // 2. GAS 응답 로드 (URL 설정된 경우)
-            let gasData = [];
-            if (gasWebhookUrl) {
-                const syncEl = document.getElementById('sync-status');
-                if (syncEl) syncEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1 text-primary"></i><span class="text-primary">동기화 중...</span>';
-                gasData = await fetchFromGAS();
-                if (syncEl) {
-                    if (gasData.length >= 0) {
-                        syncEl.innerHTML = '<i class="fas fa-sync-alt mr-1 text-success"></i><span class="text-success">동기화 완료 (' + gasData.length + '건)</span>';
-                    } else {
-                        syncEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">동기화 실패</span>';
-                    }
-                }
-            }
-
-            // 3. 중복 제거 후 병합 (timestamp 기준)
-            // GAS 데이터가 마스터, local 중 GAS에 없는 것만 추가
-            const gasTimestamps = new Set(gasData.map(d => d.timestamp));
-            const localOnly = local.filter(d => !gasTimestamps.has(d.timestamp));
-            surveyData = [...gasData, ...localOnly].sort((a, b) =>
-                new Date(a.timestamp) - new Date(b.timestamp)
-            );
-
-            renderDashboard();
-            updateSystemStatus();
-
-            // 설정 탭 UI 초기화
-            const gasInput = document.getElementById('gas-webhook-input');
-            if (gasInput) gasInput.value = gasWebhookUrl;
-            const syncEl2 = document.getElementById('sync-status');
-            if (syncEl2 && !gasWebhookUrl) {
-                syncEl2.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span>';
-            }
-        }
-
-        async function refreshDashboard() {
-            const btn = document.getElementById('refresh-btn');
-            if (btn) {
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 불러오는 중...';
-                btn.disabled = true;
-            }
-            await loadSurveyData();
-            if (btn) {
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> 새로고침';
-                btn.disabled = false;
-            }
-        }
-
-        function renderDashboard() {
-            if (surveyData.length === 0) {
-                document.getElementById('stat-total').textContent = '0';
-                return;
-            }
-
-            calculateStats();
-            renderCharts();
-            renderHeatmap();
-            renderCrossAnalysis();
-            renderHourlyChart();
-            renderScatterChart();
-            renderCauseList();
-            renderRawDataTable();
-        }
-
-        function calculateStats() {
-            const total = surveyData.length;
-            document.getElementById('stat-total').textContent = total.toLocaleString();
-
-            let caffeineSum = 0;
-            surveyData.forEach(d => {
-                const val = d.responses.q4.answerIndex;
-                const map = [0, 50, 200, 400, 500];
-                caffeineSum += map[val-1] || 0;
-            });
-            const avgCaffeine = Math.round(caffeineSum / total);
-            document.getElementById('stat-caffeine').textContent = `${avgCaffeine}mg`;
-            document.getElementById('caffeine-bar').style.width = `${Math.min((avgCaffeine / 500) * 100, 100)}%`;
-
-            let sleepSum = 0;
-            surveyData.forEach(d => {
-                const val = d.responses.q9.answerIndex;
-                const map = [22, 23, 1, 3, 5];
-                sleepSum += map[val-1] || 0;
-            });
-            let avgSleep = sleepSum / total;
-            if (avgSleep > 12) avgSleep -= 24;
-            document.getElementById('stat-sleep').textContent = `${Math.abs(Math.round(avgSleep))}시간`;
-
-            let riskScore = 0;
-            surveyData.forEach(d => {
-                const sleepImpact = d.responses.q1.answerIndex;
-                const latency = d.responses.q8.answerIndex;
-                const fatigue = d.responses.q15.answerIndex;
-                riskScore += (sleepImpact + latency + fatigue);
-            });
-            const avgRisk = (riskScore / total / 15) * 100;
-            document.getElementById('stat-risk').textContent = `${Math.round(avgRisk)}%`;
-            
-            const riskEl = document.getElementById('risk-level');
-            if (avgRisk < 30) {
-                riskEl.textContent = '낮음 (정상 범위)';
-                riskEl.className = 'text-success';
-            } else if (avgRisk < 60) {
-                riskEl.textContent = '보통 (주의 필요)';
-                riskEl.className = 'text-warning';
-            } else {
-                riskEl.textContent = '높음 (개선 필요)';
-                riskEl.className = 'text-danger';
-            }
-        }
-
-        function renderCharts() {
-            Object.values(charts).forEach(chart => chart.destroy());
-            charts = {};
-
-            const ctx1 = document.getElementById('caffeineChart').getContext('2d');
-            charts.caffeine = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: ['0mg', '1-100mg', '100-300mg', '300-500mg', '500mg+'],
-                    datasets: [{
-                        label: '응답자 수',
-                        data: getCounts('q4'),
-                        backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-
-            const ctx2 = document.getElementById('sleepChart').getContext('2d');
-            charts.sleep = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['10 시 이전', '10-12 시', '12-2 시', '2-4 시', '4 시 이후'],
-                    datasets: [{
-                        data: getCounts('q9'),
-                        backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right', labels: { color: '#94a3b8', boxWidth: 12 } } }
-                }
-            });
-
-            const ctx3 = document.getElementById('digitalChart').getContext('2d');
-            charts.digital = new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: ['1 시간 미만', '1-3 시간', '3-5 시간', '5-7 시간', '7 시간 이상'],
-                    datasets: [{
-                        label: '응답자 수',
-                        data: getCounts('q17'),
-                        borderColor: '#ec4899',
-                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    }
-                }
-            });
-        }
-
-        function getCounts(questionId) {
-            const counts = [0,0,0,0,0];
-            surveyData.forEach(d => {
-                const idx = d.responses[questionId].answerIndex - 1;
-                if (idx >= 0 && idx < 5) counts[idx]++;
-            });
-            return counts;
-        }
-
-        function renderHourlyChart() {
-            const ctx = document.getElementById('hourlyChart').getContext('2d');
-            const hours = new Array(24).fill(0);
-            
-            surveyData.forEach(d => {
-                const date = new Date(d.timestamp);
-                const hour = date.getHours();
-                hours[hour]++;
-            });
-
-            charts.hourly = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Array.from({length: 24}, (_, i) => `${i}시`),
-                    datasets: [{
-                        label: '응답 수',
-                        data: hours,
-                        backgroundColor: hours.map((_, i) => {
-                            if (i >= 6 && i < 12) return 'rgba(16, 185, 129, 0.6)';
-                            if (i >= 12 && i < 18) return 'rgba(59, 130, 246, 0.6)';
-                            if (i >= 18 && i < 22) return 'rgba(139, 92, 246, 0.6)';
-                            return 'rgba(239, 68, 68, 0.6)';
-                        }),
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8', maxRotation: 45 } }
-                    }
-                }
-            });
-        }
-
-        function renderHeatmap() {
-            const container = document.getElementById('heatmap-container');
-            container.innerHTML = '';
-            
-            const labels = ['카페인량', '수면질', '피로도', '집중도', '디지털'];
-            const q4 = surveyData.map(d => d.responses.q4.answerIndex);
-            const q1 = surveyData.map(d => d.responses.q1.answerIndex);
-            const q15 = surveyData.map(d => d.responses.q15.answerIndex);
-            const q16 = surveyData.map(d => d.responses.q16.answerIndex);
-            const q17 = surveyData.map(d => d.responses.q17.answerIndex);
-
-            const corr = (a, b) => {
-                const n = a.length;
-                if (n === 0) return 0;
-                const sumA = a.reduce((x,y) => x+y, 0);
-                const sumB = b.reduce((x,y) => x+y, 0);
-                const sumAB = a.reduce((x,y,i) => x + y*b[i], 0);
-                const sumA2 = a.reduce((x,y) => x + y*y, 0);
-                const sumB2 = b.reduce((x,y) => x + y*y, 0);
-                const num = n*sumAB - sumA*sumB;
-                const den = Math.sqrt((n*sumA2 - sumA*sumA)*(n*sumB2 - sumB*sumB));
-                return den === 0 ? 0 : num / den;
-            };
-
-            const data = [q4, q1, q15, q16, q17];
-            
-            labels.forEach((labelI, i) => {
-                labels.forEach((labelJ, j) => {
-                    const val = corr(data[i], data[j]);
-                    const intensity = Math.abs(val);
-                    const color = val > 0 ? 
-                        `rgba(239, 68, 68, ${intensity * 0.8})` : 
-                        `rgba(59, 130, 246, ${intensity * 0.8})`;
-                    
-                    const cell = document.createElement('div');
-                    cell.className = 'heatmap-cell p-3 rounded-lg text-center cursor-pointer';
-                    cell.style.backgroundColor = color;
-                    cell.innerHTML = `
-                        <div class="font-bold text-white mb-1 text-[10px]">${labelJ}</div>
-                        <div class="text-xs text-white/90">${val > 0 ? '+' : ''}${val.toFixed(2)}</div>
-                    `;
-                    cell.title = `${labelI} vs ${labelJ}: ${val.toFixed(3)}`;
-                    container.appendChild(cell);
-                });
-            });
-        }
-
-        function renderScatterChart() {
-            const ctx = document.getElementById('scatterChart').getContext('2d');
-            const data = surveyData.map(d => ({
-                x: d.responses.q4.answerIndex * 100, // 카페인량
-                y: d.responses.q8.answerIndex * 20,  // 수면잠복기 (분)
-                r: 5
-            }));
-
-            charts.scatter = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: '카페인 vs 수면잠복기',
-                        data: data,
-                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                        borderColor: 'rgba(99, 102, 241, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            position: 'bottom',
-                            title: { display: true, text: '카페인 섭취량 (mg)', color: '#94a3b8' },
-                            grid: { color: 'rgba(255,255,255,0.1)' },
-                            ticks: { color: '#94a3b8' }
-                        },
-                        y: {
-                            title: { display: true, text: '수면 잠복기 (분)', color: '#94a3b8' },
-                            grid: { color: 'rgba(255,255,255,0.1)' },
-                            ticks: { color: '#94a3b8' }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderCrossAnalysis() {
-            const groups = [
-                { name: '저카페인 (0-100mg)', filter: d => d.responses.q4.answerIndex <= 2 },
-                { name: '중카페인 (100-300mg)', filter: d => d.responses.q4.answerIndex === 3 },
-                { name: '고카페인 (300mg+)', filter: d => d.responses.q4.answerIndex >= 4 }
-            ];
-
-            const tbody = document.getElementById('cross-analysis-body');
-            tbody.innerHTML = '';
-
-            groups.forEach(group => {
-                const filtered = surveyData.filter(group.filter);
-                if (filtered.length === 0) return;
-
-                const avgLatency = filtered.reduce((sum, d) => sum + d.responses.q8.answerIndex, 0) / filtered.length;
-                const avgSleepImpact = filtered.reduce((sum, d) => sum + d.responses.q1.answerIndex, 0) / filtered.length;
-                const avgFatigue = filtered.reduce((sum, d) => sum + d.responses.q15.answerIndex, 0) / filtered.length;
-                const avgStudyImpact = filtered.reduce((sum, d) => sum + d.responses.q16.answerIndex, 0) / filtered.length;
-
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-slate-800/50 transition';
-                row.innerHTML = `
-                    <td class="px-6 py-4 font-medium text-white">${group.name}</td>
-                    <td class="px-6 py-4 text-textSub">${filtered.length}명</td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-16 bg-slate-700 h-2 rounded-full overflow-hidden">
-                                <div class="bg-primary h-full" style="width: ${(avgLatency/5)*100}%"></div>
-                            </div>
-                            <span class="text-xs">${avgLatency.toFixed(1)}</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 rounded text-xs ${avgSleepImpact > 3 ? 'bg-danger/20 text-danger' : 'bg-success/20 text-success'}">
-                            ${avgSleepImpact > 3 ? '높음' : '보통'}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-16 bg-slate-700 h-2 rounded-full overflow-hidden">
-                                <div class="bg-warning h-full" style="width: ${(avgFatigue/5)*100}%"></div>
-                            </div>
-                            <span class="text-xs">${avgFatigue.toFixed(1)}</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 rounded text-xs ${avgStudyImpact > 3 ? 'bg-danger/20 text-danger' : 'bg-success/20 text-success'}">
-                            ${avgStudyImpact > 3 ? '심각' : '경미'}
-                        </span>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function renderCauseList() {
-            const causes = {};
-            const causeLabels = ['불규칙한 생활습관', '전자기기 사용', '학업/업무 과로', '심리적 요인', '환경/신체적 요인'];
-
-            surveyData.forEach(d => {
-                const idx = d.responses.q12.answerIndex - 1;
-                causes[idx] = (causes[idx] || 0) + 1;
-            });
-
-            const container = document.getElementById('cause-list');
-            container.innerHTML = '';
-
-            const sorted = Object.entries(causes).sort((a,b) => b[1] - a[1]);
-            const total = surveyData.length;
-
-            sorted.forEach(([idx, count]) => {
-                const percent = Math.round((count / total) * 100);
-                const div = document.createElement('div');
-                div.className = 'bg-slate-800/50 p-4 rounded-xl border border-slate-700';
-                div.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-medium text-white">${causeLabels[idx]}</span>
-                        <span class="text-xs text-primary font-bold">${percent}%</span>
-                    </div>
-                    <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
-                        <div class="bg-gradient-to-r from-primary to-secondary h-full rounded-full" style="width: ${percent}%"></div>
-                    </div>
-                    <div class="text-xs text-textSub mt-2">${count}명 응답</div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function renderRawDataTable() {
-            const tbody = document.getElementById('raw-data-body');
-            tbody.innerHTML = '';
-
-            const filteredData = surveyData.slice().reverse();
-            
-            filteredData.forEach((d, idx) => {
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-slate-800/50 transition border-b border-slate-800';
-                
-                const date = new Date(d.timestamp);
-                const timeStr = date.toLocaleString('ko-KR', { 
-                    year: 'numeric', month: '2-digit', day: '2-digit',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
-                
-                const caffeineMap = ['0mg', '1-100mg', '100-300mg', '300-500mg', '500mg+'];
-                const timeMap = ['10 시 이전', '10-12 시', '12-2 시', '2-4 시', '4 시 이후'];
-                const latencyMap = ['<10 분', '10-30 분', '30-60 분', '1-2 시간', '>2 시간'];
-                const digitalMap = ['<1 시간', '1-3 시간', '3-5 시간', '5-7 시간', '>7 시간'];
-
-                // 브라우저 정보 추출
-                let browser = 'Unknown';
-                if (d.userAgent) {
-                    if (d.userAgent.indexOf('Chrome') > -1) browser = 'Chrome';
-                    else if (d.userAgent.indexOf('Safari') > -1) browser = 'Safari';
-                    else if (d.userAgent.indexOf('Firefox') > -1) browser = 'Firefox';
-                    else if (d.userAgent.indexOf('Edge') > -1) browser = 'Edge';
-                }
-
-                row.innerHTML = `
-                    <td class="px-3 py-3 text-textSub">#${filteredData.length - idx}</td>
-                    <td class="px-3 py-3">
-                        <span class="ip-badge px-2 py-1 rounded text-slate-300">${d.clientInfo?.maskedIp || '***'}</span>
-                    </td>
-                    <td class="px-3 py-3">
-                        <span class="location-badge px-2 py-1 rounded text-xs text-purple-300">
-                            <i class="fas fa-map-marker-alt mr-1"></i>${d.clientInfo?.city || 'Unknown'}, ${d.clientInfo?.country || ''}
-                        </span>
-                    </td>
-                    <td class="px-3 py-3">
-                        <span class="time-badge px-2 py-1 rounded text-xs text-emerald-300">
-                            <i class="fas fa-clock mr-1"></i>${timeStr}
-                        </span>
-                    </td>
-                    <td class="px-3 py-3">
-                        <span class="px-2 py-1 rounded bg-slate-800 text-xs ${d.responses.q4.answerIndex >= 4 ? 'text-danger' : 'text-success'}">
-                            ${caffeineMap[d.responses.q4.answerIndex-1]}
-                        </span>
-                    </td>
-                    <td class="px-3 py-3 text-textSub">${timeMap[d.responses.q9.answerIndex-1]}</td>
-                    <td class="px-3 py-3 text-textSub">${latencyMap[d.responses.q8.answerIndex-1]}</td>
-                    <td class="px-3 py-3">
-                        <div class="flex gap-1">
-                            ${Array(5).fill(0).map((_, i) => 
-                                `<div class="w-2 h-2 rounded-full ${i < d.responses.q1.answerIndex ? 'bg-primary' : 'bg-slate-700'}"></div>`
-                            ).join('')}
-                        </div>
-                    </td>
-                    <td class="px-3 py-3 text-textSub text-xs">${digitalMap[d.responses.q17.answerIndex-1]}</td>
-                    <td class="px-3 py-3 text-textSub text-xs">${browser}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function filterTable() {
-            const term = document.getElementById('search-input').value.toLowerCase();
-            const rows = document.querySelectorAll('#raw-data-body tr');
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
-            });
-        }
-
-        function switchTab(tab) {
-            currentTab = tab;
-            
-            // Update buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active', 'text-white');
-                btn.classList.add('text-textSub');
-            });
-            document.getElementById(`tab-${tab}`).classList.add('active', 'text-white');
-            document.getElementById(`tab-${tab}`).classList.remove('text-textSub');
-            
-            // Update content
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-            document.getElementById(`content-${tab}`).classList.remove('hidden');
-            
-            // Refresh charts if needed
-            if (tab === 'overview' || tab === 'correlation') {
-                renderCharts();
-                renderHeatmap();
-                renderScatterChart();
-            } else if (tab === 'rawdata') {
-                renderRawDataTable();
-            }
-        }
-
-        function generateTestData() {
-            const count = parseInt(document.getElementById('test-count').value) || 10;
-            
-            for (let i = 0; i < count; i++) {
-                const testData = {
-                    timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-                    responses: {},
-                    clientInfo: {
-                        ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
-                        maskedIp: `192.168.1.${Math.floor(Math.random() * 255)}`,
-                        city: ['서울', '부산', '인천', '대구', '광주'][Math.floor(Math.random() * 5)],
-                        country: 'South Korea',
-                        region: 'KR',
-                        timezone: 'Asia/Seoul',
-                        isp: 'Test ISP'
-                    },
-                    userAgent: 'Mozilla/5.0 (Test Data)',
-                    screenResolution: '1920x1080',
-                    isTest: true
-                };
-                
-                questions.forEach(q => {
-                    testData.responses[q.id] = {
-                        question: q.text,
-                        category: q.category,
-                        answerIndex: Math.floor(Math.random() * 5) + 1,
-                        answerText: questionOptions[q.id][Math.floor(Math.random() * 5)]
-                    };
-                });
-                
-                surveyData.push(testData);
-                saveToLocal(testData);
-            }
-            
-            renderDashboard();
-            alert(`${count}개의 테스트 데이터가 생성되었습니다.`);
-        }
-
-        function clearAllData() {
-            if (confirm('정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                localStorage.removeItem('survey_responses');
-                surveyData = [];
-                renderDashboard();
-                alert('모든 데이터가 삭제되었습니다.');
-            }
-        }
-
-        function updateSystemStatus() {
-            document.getElementById('db-count').textContent = `${surveyData.length}개`;
-            if (surveyData.length > 0) {
-                const last = surveyData[surveyData.length - 1];
-                const date = new Date(last.timestamp);
-                document.getElementById('last-response').textContent = date.toLocaleString('ko-KR');
-            } else {
-                document.getElementById('last-response').textContent = '-';
-            }
-        }
-
-        function exportData() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFontSize(20);
-            doc.text('수면·카페인·디지털 습관 연구 결과', 14, 20);
-            
-            doc.setFontSize(12);
-            doc.text(`총 응답자: ${document.getElementById('stat-total').textContent}`, 14, 40);
-            doc.text(`평균 카페인: ${document.getElementById('stat-caffeine').textContent}`, 14, 50);
-            doc.text(`평균 수면: ${document.getElementById('stat-sleep').textContent}`, 14, 60);
-            
-            const tableData = surveyData.map((d, i) => [
-                i+1,
-                d.responses.q4.answerText,
-                d.responses.q9.answerText,
-                d.responses.q8.answerText,
-                d.responses.q1.answerText,
-                d.clientInfo?.city || 'Unknown',
-                new Date(d.timestamp).toLocaleDateString()
-            ]);
-            
-            doc.autoTable({
-                head: [['ID', '카페인량', '취침시간', '수면잠복기', '수면영향', '위치', '제출일']],
-                body: tableData,
-                startY: 70,
-                styles: { fontSize: 8, cellPadding: 2 },
-                headStyles: { fillColor: [99, 102, 241] }
-            });
-            
-            doc.save('survey-results.pdf');
-        }
-
-        document.getElementById('admin-password')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') checkAdmin();
-        });
-    </script>
+}
+
+// ═══════════════════════════════════════════════════════
+//  IP 감지
+// ═══════════════════════════════════════════════════════
+async function getClientInfo() {
+  try {
+    const r = await fetch('https://ipapi.co/json/');
+    const d = await r.json();
+    return {
+      ip: d.ip||'Unknown',
+      maskedIp: (d.ip||'?').split('.').slice(0,3).join('.')+'.***',
+      city: d.city||'Unknown', country: d.country_name||'Unknown', isp: d.org||'Unknown'
+    };
+  } catch {
+    return {ip:'Unknown',maskedIp:'***.***.***.***',city:'Unknown',country:'Unknown',isp:'Unknown'};
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg, type='success') {
+  clearTimeout(toastTimer);
+  const icons = {success:'✅',error:'❌',info:'ℹ️',warning:'⚠️'};
+  document.getElementById('ticon').textContent = icons[type]||'ℹ️';
+  document.getElementById('tmsg').textContent = msg;
+  const el = document.getElementById('toast');
+  el.classList.remove('hidden');
+  toastTimer = setTimeout(()=>el.classList.add('hidden'), 3500);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SURVEY RENDER
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  renderQuestions();
+  document.getElementById('ap').addEventListener('keypress', e=>{ if(e.key==='Enter') checkAdmin(); });
+});
+
+function renderQuestions() {
+  let html = '', cur = '';
+  Qs.forEach((q, i) => {
+    if (q.cat !== cur) {
+      cur = q.cat;
+      html += `<div class="flex items-center gap-3 my-6">
+        <div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+        <span class="text-xs font-medium text-primary px-3 py-1 rounded-full bg-primary/10 border border-primary/20">${CatLabels[q.cat]}</span>
+        <div class="h-px flex-1 bg-gradient-to-r from-transparent via-slate-600 to-transparent"></div>
+      </div>`;
+    }
+    html += `<div class="bg-card rounded-2xl p-5 border border-slate-700 shadow-lg" id="qc-${q.id}">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="px-2 py-0.5 rounded bg-slate-700 text-xs font-bold text-primary">${q.id.toUpperCase()}</span>
+        <span class="text-xs text-textSub border border-slate-600 px-2 py-0.5 rounded-full">${q.lbl}</span>
+      </div>
+      <h3 class="text-sm font-bold text-white mb-4 leading-relaxed">${q.txt}</h3>
+      <div class="space-y-2.5">
+        ${Opts[q.id].map((opt,j)=>`<label class="flex items-center gap-3 cursor-pointer group">
+          <div class="relative shrink-0">
+            <input type="radio" name="${q.id}" value="${j+1}" class="peer sr-only" onchange="updateProg()">
+            <div class="w-5 h-5 rounded-full border-2 border-slate-500 peer-checked:border-primary peer-checked:bg-primary transition-all"></div>
+          </div>
+          <span class="text-sm text-slate-300 group-hover:text-white transition-colors">${opt}</span>
+        </label>`).join('')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('qc').innerHTML = html;
+}
+
+function startSurvey() {
+  document.getElementById('intro').classList.add('hidden');
+  document.getElementById('sf').classList.remove('hidden');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateProg() {
+  const ans = Qs.filter(q=>document.querySelector(`input[name="${q.id}"]:checked`)).length;
+  const pct = Math.round((ans/Qs.length)*100);
+  document.getElementById('pb').style.width = pct + '%';
+  document.getElementById('ptxt').textContent = pct + '% 완료';
+}
+
+async function submitSurvey() {
+  const unan = Qs.filter(q=>!document.querySelector(`input[name="${q.id}"]:checked`));
+  if (unan.length) {
+    toast(`미답변 문항이 ${unan.length}개 있습니다.`, 'warning');
+    const el = document.getElementById('qc-'+unan[0].id);
+    if (el) { el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('ring-2','ring-red-500'); setTimeout(()=>el.classList.remove('ring-2','ring-red-500'),2000); }
+    return;
+  }
+  if (!confirm('설문을 제출하시겠습니까?')) return;
+
+  const btn = document.getElementById('subbtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner sp mr-2"></i>제출 중...';
+
+  const ci = await getClientInfo();
+  const res = {};
+  Qs.forEach(q=>{
+    const v = parseInt(document.querySelector(`input[name="${q.id}"]:checked`).value);
+    res[q.id] = {question:q.txt, category:q.cat, answerIndex:v, answerText:Opts[q.id][v-1]};
+  });
+  const entry = {timestamp:new Date().toISOString(), responses:res, clientInfo:ci, userAgent:navigator.userAgent, isTest:false};
+
+  // 로컬 저장 (항상)
+  lsAdd(entry);
+
+  // JSONBin 저장 (설정된 경우)
+  if (jbKey && jbBinId) {
+    const cur = await jbRead() || [];
+    cur.push(entry);
+    await jbWrite(cur);
+  }
+
+  document.getElementById('sf').classList.add('hidden');
+  document.getElementById('rs').classList.remove('hidden');
+  document.querySelector('header').classList.add('hidden');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════════════════
+function openAM() { const m=document.getElementById('am'); m.classList.remove('hidden'); m.classList.add('flex'); document.getElementById('ap').focus(); }
+function closeAM() { const m=document.getElementById('am'); m.classList.add('hidden'); m.classList.remove('flex'); document.getElementById('ap').value=''; document.getElementById('ae').classList.add('hidden'); }
+function checkAdmin() {
+  if (document.getElementById('ap').value === 'admin') { closeAM(); enterAdmin(); }
+  else { document.getElementById('ae').classList.remove('hidden'); document.getElementById('ap').value=''; }
+}
+function enterAdmin() {
+  document.getElementById('sv').classList.remove('on');
+  document.getElementById('av').classList.add('on');
+  document.getElementById('hsubt').textContent = '관리자 대시보드';
+  document.getElementById('sh').classList.add('hidden');
+  const ah = document.getElementById('ah'); ah.classList.remove('hidden'); ah.classList.add('flex');
+  document.getElementById('pbc').classList.add('hidden');
+  // 설정 UI 초기화
+  document.getElementById('jbkey').value = jbKey;
+  document.getElementById('jbid').value = jbBinId;
+  doRefresh();
+}
+function exitAdmin() {
+  document.getElementById('av').classList.remove('on');
+  document.getElementById('sv').classList.add('on');
+  document.getElementById('hsubt').textContent = '학생용 설문지';
+  document.getElementById('sh').classList.remove('hidden');
+  const ah = document.getElementById('ah'); ah.classList.add('hidden'); ah.classList.remove('flex');
+  document.getElementById('pbc').classList.remove('hidden');
+  Object.values(charts).forEach(c=>{try{c.destroy()}catch{}});
+  charts={};
+}
+
+async function doRefresh() {
+  const btn = document.getElementById('rbtn');
+  if (btn) { btn.innerHTML='<i class="fas fa-spinner sp"></i><span>로딩...</span>'; btn.disabled=true; }
+  document.getElementById('cst').textContent = '불러오는 중...';
+  await loadAllData();
+  renderDash();
+  document.getElementById('cst').textContent = '실시간 연결됨';
+  if (btn) { btn.innerHTML='<i class="fas fa-sync-alt"></i><span>새로고침</span>'; btn.disabled=false; }
+  toast(`${allData.length}개 응답 로드 완료`, 'success');
+}
+
+// ═══════════════════════════════════════════════════════
+//  DASHBOARD RENDER
+// ═══════════════════════════════════════════════════════
+function renderDash() {
+  calcStats();
+  renderCharts();
+  renderHeatmap();
+  renderScatter();
+  renderHourly();
+  renderCross();
+  renderCauses();
+  renderRaw();
+}
+
+function gc(qid) {
+  const c=[0,0,0,0,0];
+  allData.forEach(d=>{ const i=(d.responses[qid]?.answerIndex||1)-1; if(i>=0&&i<5) c[i]++; });
+  return c;
+}
+
+function calcStats() {
+  const n = allData.length;
+  document.getElementById('st0').textContent = n;
+  document.getElementById('dbc').textContent = n+'개';
+  if (!n) return;
+
+  const cafMap=[0,50,200,400,500];
+  const avgCaf=Math.round(allData.reduce((s,d)=>s+(cafMap[(d.responses.q4?.answerIndex||1)-1]||0),0)/n);
+  document.getElementById('st1').textContent = avgCaf+'mg';
+  document.getElementById('cafbar').style.width = Math.min((avgCaf/500)*100,100)+'%';
+
+  const slLabels=['22시','23시','01시','03시','05시'];
+  const slC=[0,0,0,0,0];
+  allData.forEach(d=>{ const i=(d.responses.q9?.answerIndex||1)-1; if(i>=0&&i<5) slC[i]++; });
+  document.getElementById('st2').textContent = slLabels[slC.indexOf(Math.max(...slC))];
+
+  const risk=Math.round(allData.reduce((s,d)=>s+(d.responses.q1?.answerIndex||0)+(d.responses.q8?.answerIndex||0)+(d.responses.q15?.answerIndex||0),0)/n/15*100);
+  document.getElementById('st3').textContent = risk+'%';
+  const rl=document.getElementById('rl');
+  if(risk<30){rl.textContent='낮음 (정상 범위)';rl.className='text-xs text-success mt-2';}
+  else if(risk<60){rl.textContent='보통 (주의 필요)';rl.className='text-xs text-warning mt-2';}
+  else{rl.textContent='높음 (개선 필요)';rl.className='text-xs text-danger mt-2';}
+}
+
+function dk(name){if(charts[name]){try{charts[name].destroy();}catch{}delete charts[name];}}
+const cOpts=(ymax)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:ymax,grid:{color:'rgba(255,255,255,0.07)'},ticks:{color:'#94a3b8'}},x:{grid:{display:false},ticks:{color:'#94a3b8',maxRotation:35}}}});
+
+function renderCharts(){
+  dk('c1');dk('c2');dk('c3');
+  charts.c1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['0mg','1-100','100-300','300-500','500+'],datasets:[{data:gc('q4'),backgroundColor:['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444'],borderRadius:6}]},options:cOpts()});
+  charts.c2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:['22시전','22-24시','24-2시','2-4시','4시후'],datasets:[{data:gc('q9'),backgroundColor:['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#94a3b8',boxWidth:10,font:{size:11}}}}}});
+  charts.c3=new Chart(document.getElementById('ch3'),{type:'line',data:{labels:['<1h','1-3h','3-5h','5-7h','7h+'],datasets:[{data:gc('q17'),borderColor:'#ec4899',backgroundColor:'rgba(236,72,153,0.12)',fill:true,tension:0.4}]},options:cOpts()});
+}
+
+function renderHourly(){
+  dk('c4');
+  const hrs=new Array(24).fill(0);
+  allData.forEach(d=>{const h=new Date(d.timestamp).getHours();hrs[h]++;});
+  charts.c4=new Chart(document.getElementById('ch4'),{type:'bar',data:{labels:Array.from({length:24},(_,i)=>i+'시'),datasets:[{data:hrs,backgroundColor:hrs.map((_,i)=>i>=6&&i<12?'rgba(16,185,129,.65)':i>=12&&i<18?'rgba(59,130,246,.65)':i>=18&&i<22?'rgba(139,92,246,.65)':'rgba(239,68,68,.65)'),borderRadius:3}]},options:cOpts()});
+}
+
+function renderHeatmap(){
+  const c=document.getElementById('hmc');c.innerHTML='';
+  const labs=['카페인량','수면질','피로도','집중도','디지털'];
+  const vecs=[['q4'],['q1'],['q15'],['q16'],['q17']].map(([q])=>allData.map(d=>d.responses[q]?.answerIndex||1));
+  const corr=(a,b)=>{const n=a.length;if(n<2)return 0;const mA=a.reduce((x,y)=>x+y,0)/n,mB=b.reduce((x,y)=>x+y,0)/n;const num=a.reduce((s,v,i)=>s+(v-mA)*(b[i]-mB),0),den=Math.sqrt(a.reduce((s,v)=>s+(v-mA)**2,0)*b.reduce((s,v)=>s+(v-mB)**2,0));return den?num/den:0;};
+  labs.forEach((_,i)=>labs.forEach((_,j)=>{
+    const v=corr(vecs[i],vecs[j]);
+    const el=document.createElement('div');
+    el.className='heatmap-cell p-2 rounded-lg text-center cursor-pointer';
+    el.style.backgroundColor=v>0?`rgba(239,68,68,${Math.abs(v)*.85})`:`rgba(59,130,246,${Math.abs(v)*.85})`;
+    el.title=`${labs[i]} vs ${labs[j]}: ${v.toFixed(3)}`;
+    el.innerHTML=`<div class="text-white font-bold mb-0.5" style="font-size:9px">${labs[j]}</div><div class="text-white/90 text-xs">${v>0?'+':''}${v.toFixed(2)}</div>`;
+    c.appendChild(el);
+  }));
+}
+
+function renderScatter(){
+  dk('c5');
+  charts.c5=new Chart(document.getElementById('ch5'),{type:'scatter',data:{datasets:[{label:'데이터',data:allData.map(d=>({x:(d.responses.q4?.answerIndex||1)*100,y:(d.responses.q8?.answerIndex||1)*20})),backgroundColor:'rgba(99,102,241,.65)',borderWidth:0,pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{type:'linear',title:{display:true,text:'카페인(mg)',color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.07)'},ticks:{color:'#94a3b8'}},y:{title:{display:true,text:'잠복기(분)',color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.07)'},ticks:{color:'#94a3b8'}}}}});
+}
+
+function renderCross(){
+  const tb=document.getElementById('ctb');tb.innerHTML='';
+  const groups=[{n:'저카페인 (0-100mg)',f:d=>d.responses.q4?.answerIndex<=2},{n:'중카페인 (100-300mg)',f:d=>d.responses.q4?.answerIndex===3},{n:'고카페인 (300mg+)',f:d=>d.responses.q4?.answerIndex>=4}];
+  groups.forEach(g=>{
+    const f=allData.filter(g.f);if(!f.length)return;
+    const avg=q=>f.reduce((s,d)=>s+(d.responses[q]?.answerIndex||0),0)/f.length;
+    const al=avg('q8'),si=avg('q1'),fa=avg('q15'),st=avg('q16');
+    const tr=document.createElement('tr');tr.className='hover:bg-slate-800/50 transition';
+    tr.innerHTML=`<td class="px-4 py-3 font-medium text-white">${g.n}</td>
+      <td class="px-4 py-3 text-textSub">${f.length}명</td>
+      <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-14 bg-slate-700 h-1.5 rounded-full overflow-hidden"><div class="bg-primary h-full" style="width:${(al/5)*100}%"></div></div><span class="text-xs">${al.toFixed(1)}</span></div></td>
+      <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${si>3?'bg-danger/20 text-danger':'bg-success/20 text-success'}">${si>3?'높음':'보통'}</span></td>
+      <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-14 bg-slate-700 h-1.5 rounded-full overflow-hidden"><div class="bg-warning h-full" style="width:${(fa/5)*100}%"></div></div><span class="text-xs">${fa.toFixed(1)}</span></div></td>
+      <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ${st>3?'bg-danger/20 text-danger':'bg-success/20 text-success'}">${st>3?'심각':'경미'}</span></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function renderCauses(){
+  const labs=['불규칙한 생활습관','전자기기 사용','학업/업무 과로','심리적 요인','환경/신체적 요인'];
+  const cnts=[0,0,0,0,0];
+  allData.forEach(d=>{const i=(d.responses.q12?.answerIndex||1)-1;if(i>=0&&i<5)cnts[i]++;});
+  const total=allData.length||1;
+  const c=document.getElementById('cl');c.innerHTML='';
+  cnts.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v).forEach(({v,i})=>{
+    const pct=Math.round((v/total)*100);
+    const d=document.createElement('div');d.className='bg-slate-800/50 p-4 rounded-xl border border-slate-700';
+    d.innerHTML=`<div class="flex justify-between mb-2"><span class="text-sm font-medium text-white">${labs[i]}</span><span class="text-xs text-primary font-bold">${pct}%</span></div>
+      <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden"><div class="bg-gradient-to-r from-primary to-secondary h-full" style="width:${pct}%"></div></div>
+      <div class="text-xs text-textSub mt-2">${v}명 응답</div>`;
+    c.appendChild(d);
+  });
+}
+
+function renderRaw(){
+  const tb=document.getElementById('rdb');tb.innerHTML='';
+  const cafM=['0mg','1-100mg','100-300mg','300-500mg','500mg+'];
+  const tmM=['22시전','22-24시','24-2시','2-4시','4시후'];
+  const latM=['<10분','10-30분','30-60분','1-2시간','>2시간'];
+  const digM=['<1h','1-3h','3-5h','5-7h','>7h'];
+  [...allData].reverse().forEach((d,idx)=>{
+    const ts=new Date(d.timestamp).toLocaleString('ko-KR',{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const ua=d.userAgent||'';
+    let br='Other';
+    if(ua.includes('Chrome')&&!ua.includes('Edg'))br='Chrome';
+    else if(ua.includes('Edg'))br='Edge';
+    else if(ua.includes('Safari')&&!ua.includes('Chrome'))br='Safari';
+    else if(ua.includes('Firefox'))br='Firefox';
+    const q4i=(d.responses.q4?.answerIndex||1)-1;
+    const q9i=(d.responses.q9?.answerIndex||1)-1;
+    const q8i=(d.responses.q8?.answerIndex||1)-1;
+    const q17i=(d.responses.q17?.answerIndex||1)-1;
+    const q1i=(d.responses.q1?.answerIndex||1);
+    const tr=document.createElement('tr');tr.className='hover:bg-slate-800/50 transition border-b border-slate-800';
+    tr.innerHTML=`<td class="px-3 py-2.5 text-textSub">#${allData.length-idx}${d.isTest?'<span class="ml-1 text-[10px] bg-warning/20 text-warning px-1 rounded">TEST</span>':''}</td>
+      <td class="px-3 py-2.5"><span class="ip-b px-2 py-0.5 rounded text-slate-300">${d.clientInfo?.maskedIp||'***'}</span></td>
+      <td class="px-3 py-2.5"><span class="loc-b px-2 py-0.5 rounded text-xs text-purple-300"><i class="fas fa-map-marker-alt mr-1"></i>${d.clientInfo?.city||'?'}</span></td>
+      <td class="px-3 py-2.5"><span class="ts-b px-2 py-0.5 rounded text-xs text-emerald-300">${ts}</span></td>
+      <td class="px-3 py-2.5"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-xs ${q4i>=3?'text-danger':'text-success'}">${cafM[q4i]||'?'}</span></td>
+      <td class="px-3 py-2.5 text-textSub text-xs">${tmM[q9i]||'?'}</td>
+      <td class="px-3 py-2.5 text-textSub text-xs">${latM[q8i]||'?'}</td>
+      <td class="px-3 py-2.5"><div class="flex gap-0.5">${Array(5).fill(0).map((_,j)=>`<div class="w-2 h-2 rounded-full ${j<q1i?'bg-primary':'bg-slate-700'}"></div>`).join('')}</div></td>
+      <td class="px-3 py-2.5 text-textSub text-xs">${digM[q17i]||'?'}</td>
+      <td class="px-3 py-2.5 text-textSub text-xs">${br}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function filterTbl(){
+  const t=document.getElementById('si').value.toLowerCase();
+  document.querySelectorAll('#rdb tr').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(t)?'':'none';});
+}
+
+// ═══════════════════════════════════════════════════════
+//  TAB SWITCH
+// ═══════════════════════════════════════════════════════
+function switchTab(id){
+  document.querySelectorAll('.tb').forEach(b=>{b.classList.remove('on','text-white');b.classList.add('text-textSub');});
+  document.getElementById('t-'+id).classList.add('on','text-white');
+  document.getElementById('t-'+id).classList.remove('text-textSub');
+  document.querySelectorAll('.tc').forEach(c=>c.classList.add('hidden'));
+  document.getElementById('c-'+id).classList.remove('hidden');
+  if(id==='ov'||id==='co'){renderCharts();renderHeatmap();renderScatter();renderHourly();}
+  if(id==='rd') renderRaw();
+}
+
+// ═══════════════════════════════════════════════════════
+//  SETTINGS ACTIONS
+// ═══════════════════════════════════════════════════════
+function saveJBConfig(){
+  jbKey = document.getElementById('jbkey').value.trim();
+  jbBinId = document.getElementById('jbid').value.trim();
+  localStorage.setItem('jb_key', jbKey);
+  localStorage.setItem('jb_bin_id', jbBinId);
+  const st = document.getElementById('jbst');
+  st.textContent = jbKey && jbBinId ? '✓ 저장 완료. 새로고침하면 클라우드 응답이 불러와집니다.' : '저장됨 (키 미입력 = 로컬 모드)';
+  st.className = 'mt-2 text-xs ' + (jbKey && jbBinId ? 'text-success' : 'text-warning');
+}
+
+async function testJBConfig(){
+  const key = document.getElementById('jbkey').value.trim();
+  const bid = document.getElementById('jbid').value.trim();
+  const st = document.getElementById('jbst');
+  if(!key||!bid){st.textContent='키와 Bin ID를 모두 입력하세요.';st.className='mt-2 text-xs text-warning';return;}
+  st.textContent='연결 테스트 중...';st.className='mt-2 text-xs text-textSub';
+  try {
+    const r=await fetch(`${JB_BASE}/${bid}/latest`,{headers:{'X-Master-Key':key}});
+    if(r.ok){const d=await r.json();st.textContent=`✓ 연결 성공! 현재 저장된 응답: ${(d.record?.responses||[]).length}건`;st.className='mt-2 text-xs text-success';}
+    else{st.textContent=`✗ 연결 실패 (${r.status}). Key/BinID를 확인하세요.`;st.className='mt-2 text-xs text-danger';}
+  } catch(e){st.textContent='✗ 네트워크 오류: '+e.message;st.className='mt-2 text-xs text-danger';}
+}
+
+async function pushLocalToJB(){
+  const local=lsGet();
+  if(!local.length){toast('업로드할 로컬 데이터가 없습니다.','info');return;}
+  if(!jbKey||!jbBinId){toast('JSONBin 설정이 필요합니다.','warning');return;}
+  const cloud=await jbRead()||[];
+  const ts=new Set(cloud.map(d=>d.timestamp));
+  const newOnes=local.filter(d=>!ts.has(d.timestamp));
+  if(!newOnes.length){toast('이미 모두 동기화되어 있습니다.','info');return;}
+  const merged=[...cloud,...newOnes].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const ok=await jbWrite(merged);
+  if(ok){toast(`${newOnes.length}개 업로드 완료!`,'success');doRefresh();}
+  else toast('업로드 실패. 설정을 확인하세요.','error');
+}
+
+async function genTestData(){
+  const cnt=parseInt(document.getElementById('tc').value)||5;
+  const cities=['서울','부산','인천','대구','광주','대전','수원'];
+  const entries=[];
+  for(let i=0;i<cnt;i++){
+    const e={
+      timestamp:new Date(Date.now()-Math.random()*7*86400000).toISOString(),
+      responses:{}, clientInfo:{ip:'192.168.1.x',maskedIp:'192.168.1.***',city:cities[~~(Math.random()*cities.length)],country:'South Korea',isp:'Test'},
+      userAgent:'Mozilla/5.0 (Test)',isTest:true
+    };
+    Qs.forEach(q=>{const v=~~(Math.random()*5)+1;e.responses[q.id]={question:q.txt,category:q.cat,answerIndex:v,answerText:Opts[q.id][v-1]};});
+    entries.push(e);
+    lsAdd(e);
+  }
+  if(jbKey&&jbBinId){
+    const cur=await jbRead()||[];
+    await jbWrite([...cur,...entries]);
+  }
+  await doRefresh();
+  toast(`${cnt}개 테스트 데이터 생성 완료`,'success');
+}
+
+async function clearData(){
+  if(!confirm('정말로 모든 데이터를 삭제하시겠습니까?'))return;
+  lsClear();
+  if(jbKey&&jbBinId) await jbWrite([]);
+  allData=[];
+  renderDash();
+  toast('모든 데이터가 삭제되었습니다.','info');
+}
+
+// ═══════════════════════════════════════════════════════
+//  PDF EXPORT
+// ═══════════════════════════════════════════════════════
+function exportPDF(){
+  const {jsPDF}=window.jspdf;const doc=new jsPDF();
+  doc.setFontSize(16);doc.text('수면·카페인·디지털 습관 연구 결과',14,18);
+  doc.setFontSize(10);
+  doc.text(`총 응답자: ${document.getElementById('st0').textContent}명  |  평균 카페인: ${document.getElementById('st1').textContent}  |  위험도: ${document.getElementById('st3').textContent}`,14,30);
+  doc.text(`생성일: ${new Date().toLocaleString('ko-KR')}`,14,38);
+  const rows=allData.map((d,i)=>[i+1,d.responses.q4?.answerText||'-',d.responses.q9?.answerText||'-',d.responses.q8?.answerText||'-',d.responses.q1?.answerText||'-',d.clientInfo?.city||'?',new Date(d.timestamp).toLocaleDateString('ko-KR')]);
+  doc.autoTable({head:[['ID','카페인량','취침시간','수면잠복기','수면영향','위치','제출일']],body:rows,startY:46,styles:{fontSize:7,cellPadding:1.5},headStyles:{fillColor:[99,102,241]}});
+  doc.save('survey-results.pdf');
+}
+</script>
 </body>
 </html>
