@@ -11,9 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
 
     <script>
         tailwind.config = {
@@ -412,6 +410,51 @@
         <!-- Settings Tab -->
         <div id="content-settings" class="tab-content hidden">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- 크로스-기기 동기화 설정 (신규) -->
+                <div class="glass-panel rounded-2xl p-6 md:col-span-2 border border-primary/30">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                            <i class="fas fa-globe text-primary text-sm"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">크로스-기기 동기화 설정</h3>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning border border-warning/30">필수 설정</span>
+                    </div>
+                    <p class="text-sm text-textSub mb-4">
+                        다른 기기에서 제출된 응답을 이 대시보드에서 보려면 <strong class="text-white">Google Apps Script 웹훅 URL</strong>을 설정해야 합니다.<br>
+                        설정하지 않으면 <span class="text-warning">이 기기에서 제출한 응답만</span> 대시보드에 표시됩니다.
+                    </p>
+
+                    <div class="bg-slate-800/60 rounded-xl p-4 mb-4 text-xs text-textSub space-y-2 border border-slate-700">
+                        <p class="text-white font-bold text-sm mb-2"><i class="fas fa-list-ol mr-2 text-primary"></i>Google Apps Script 설정 방법</p>
+                        <p>① <a href="https://script.google.com" target="_blank" class="text-primary underline">script.google.com</a> 에서 새 프로젝트 생성</p>
+                        <p>② 아래 코드를 붙여넣기 후 저장:</p>
+                        <pre class="bg-slate-900 rounded p-3 text-xs text-green-300 overflow-x-auto mt-2 leading-relaxed">function doPost(e) {
+  var sheet = SpreadsheetApp.openById('스프레드시트_ID').getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  var row = [data.timestamp, data.clientInfo.city,
+             data.clientInfo.maskedIp, JSON.stringify(data.responses)];
+  sheet.appendRow(row);
+  return ContentService.createTextOutput('ok');
+}</pre>
+                        <p>③ <span class="text-white">배포 → 새 배포 → 웹 앱</span> 선택, 액세스: <span class="text-white">모든 사용자</span>로 설정 후 배포</p>
+                        <p>④ 생성된 웹 앱 URL을 아래에 입력</p>
+                    </div>
+
+                    <div class="flex gap-3 items-center">
+                        <input type="url" id="gas-webhook-input" placeholder="https://script.google.com/macros/s/..." 
+                               value="" 
+                               class="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-primary transition">
+                        <button onclick="saveGasWebhook()" class="px-4 py-2 bg-primary hover:bg-indigo-500 text-white text-sm rounded-lg transition whitespace-nowrap">
+                            <i class="fas fa-save mr-1"></i>저장
+                        </button>
+                        <button onclick="testGasWebhook()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition whitespace-nowrap">
+                            <i class="fas fa-vial mr-1"></i>테스트
+                        </button>
+                    </div>
+                    <p id="gas-status" class="mt-2 text-xs text-textSub"></p>
+                </div>
+
                 <div class="glass-panel rounded-2xl p-6">
                     <h3 class="text-lg font-bold text-white mb-4">테스트 데이터 생성</h3>
                     <p class="text-sm text-textSub mb-4">관리자 모드에서 테스트용 가짜 데이터를 생성할 수 있습니다. 실제 응답과 구분됩니다.</p>
@@ -446,7 +489,7 @@
                         </div>
                         <div class="flex justify-between items-center py-2">
                             <span class="text-sm text-textSub">데이터 동기화</span>
-                            <span class="text-sm text-success"><i class="fas fa-sync-alt mr-1"></i>실시간</span>
+                            <span class="text-sm" id="sync-status"><i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span></span>
                         </div>
                     </div>
                 </div>
@@ -487,28 +530,12 @@
     </div>
 
     <script>
-        // Firebase Configuration - 사용자는 여기에 자신의 Firebase 설정을 입력해야 합니다
-        const firebaseConfig = {
-            apiKey: "AIzaSyDummyKeyForDemo",
-            authDomain: "survey-demo.firebaseapp.com",
-            databaseURL: "https://survey-demo-default-rtdb.firebaseio.com",
-            projectId: "survey-demo",
-            storageBucket: "survey-demo.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef"
-        };
+        // Firebase 는 실제 프로젝트 설정이 없으므로 비활성화
+        // 크로스-기기 저장은 Google Apps Script 웹훅을 통해 처리
+        let db = null;
 
-        // Firebase 초기화 (에러 처리 포함)
-        let db;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            console.log('Firebase initialized');
-        } catch (e) {
-            console.error('Firebase init error:', e);
-            // Firebase 가 없으면 localStorage 로 폴백
-            db = null;
-        }
+        // Google Apps Script 웹훅 URL (설정 탭에서 입력 가능)
+        let gasWebhookUrl = localStorage.getItem('gas_webhook_url') || '';
 
         // Questions Data
         const questions = [
@@ -708,40 +735,22 @@
                 isTest: false
             };
 
-            // Firebase 또는 localStorage 에 저장
-            if (db) {
-                let settled = false;
-                const fallback = setTimeout(() => {
-                    if (!settled) {
-                        settled = true;
-                        console.warn('Firebase timeout: falling back to localStorage');
-                        saveToLocal(submissionData);
-                        showResult();
-                    }
-                }, 5000);
-                const newRef = db.ref('responses').push();
-                newRef.set(submissionData)
-                    .then(() => {
-                        if (!settled) {
-                            settled = true;
-                            clearTimeout(fallback);
-                            showResult();
-                        }
-                    })
-                    .catch((error) => {
-                        if (!settled) {
-                            settled = true;
-                            clearTimeout(fallback);
-                            console.error('Firebase error:', error);
-                            // 실패 시 localStorage 로 폴백
-                            saveToLocal(submissionData);
-                            showResult();
-                        }
+            // Google Apps Script 웹훅 또는 localStorage 에 저장
+            if (gasWebhookUrl) {
+                try {
+                    await fetch(gasWebhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(submissionData)
                     });
-            } else {
-                saveToLocal(submissionData);
-                showResult();
+                } catch (e) {
+                    console.error('GAS webhook error:', e);
+                }
             }
+            // 항상 localStorage 에도 저장 (이 기기에서 관리자 확인 용도)
+            saveToLocal(submissionData);
+            showResult();
         }
 
         function saveToLocal(data) {
@@ -794,16 +803,6 @@
             document.getElementById('progress-bar-container').classList.add('hidden');
             
             loadSurveyData();
-            
-            // Firebase 실시간 리스너 설정
-            if (db) {
-                db.ref('responses').on('value', (snapshot) => {
-                    const data = snapshot.val();
-                    surveyData = data ? Object.values(data) : [];
-                    renderDashboard();
-                    updateSystemStatus();
-                });
-            }
         }
 
         function exitAdmin() {
@@ -817,27 +816,66 @@
             
             Object.values(charts).forEach(chart => chart.destroy());
             charts = {};
-            
-            if (db) {
-                db.ref('responses').off();
+        }
+
+        function saveGasWebhook() {
+            const url = document.getElementById('gas-webhook-input').value.trim();
+            gasWebhookUrl = url;
+            localStorage.setItem('gas_webhook_url', url);
+            const statusEl = document.getElementById('gas-status');
+            const syncEl = document.getElementById('sync-status');
+            if (url) {
+                statusEl.textContent = '✓ URL이 저장되었습니다. 이후 제출부터 크로스-기기 저장이 활성화됩니다.';
+                statusEl.className = 'mt-2 text-xs text-success';
+                syncEl.innerHTML = '<i class="fas fa-sync-alt mr-1 text-success"></i><span class="text-success">웹훅 연결됨</span>';
+            } else {
+                statusEl.textContent = 'URL이 비워졌습니다. 크로스-기기 저장이 비활성화됩니다.';
+                statusEl.className = 'mt-2 text-xs text-warning';
+                syncEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span>';
+            }
+        }
+
+        async function testGasWebhook() {
+            const url = document.getElementById('gas-webhook-input').value.trim();
+            const statusEl = document.getElementById('gas-status');
+            if (!url) {
+                statusEl.textContent = '먼저 URL을 입력하세요.';
+                statusEl.className = 'mt-2 text-xs text-warning';
+                return;
+            }
+            statusEl.textContent = '테스트 전송 중...';
+            statusEl.className = 'mt-2 text-xs text-textSub';
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timestamp: new Date().toISOString(), isTest: true, responses: {}, clientInfo: { city: 'Test' } })
+                });
+                statusEl.textContent = '✓ 테스트 전송 완료. Google Sheets에서 수신 여부를 확인하세요.';
+                statusEl.className = 'mt-2 text-xs text-success';
+            } catch (e) {
+                statusEl.textContent = '✗ 전송 실패: ' + e.message;
+                statusEl.className = 'mt-2 text-xs text-danger';
             }
         }
 
         async function loadSurveyData() {
-            if (db) {
-                // localStorage 에서도 로드 (Firebase 폴백 응답 포함)
-                const local = JSON.parse(localStorage.getItem('survey_responses') || '[]');
-                if (local.length > 0) {
-                    surveyData = local;
-                    renderDashboard();
-                    updateSystemStatus();
+            // localStorage 에서 로드
+            surveyData = JSON.parse(localStorage.getItem('survey_responses') || '[]');
+            renderDashboard();
+            updateSystemStatus();
+            // 설정 탭의 GAS URL 입력창 초기화
+            const gasInput = document.getElementById('gas-webhook-input');
+            if (gasInput) gasInput.value = gasWebhookUrl;
+            // 동기화 상태 표시 업데이트
+            const syncEl = document.getElementById('sync-status');
+            if (syncEl) {
+                if (gasWebhookUrl) {
+                    syncEl.innerHTML = '<i class="fas fa-sync-alt mr-1 text-success"></i><span class="text-success">웹훅 연결됨</span>';
+                } else {
+                    syncEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span>';
                 }
-                // Firebase 실시간 리스너는 enterAdminMode 에서 설정됨
-            } else {
-                // localStorage 에서 로드
-                surveyData = JSON.parse(localStorage.getItem('survey_responses') || '[]');
-                renderDashboard();
-                updateSystemStatus();
             }
         }
 
@@ -1302,7 +1340,6 @@
         function generateTestData() {
             const count = parseInt(document.getElementById('test-count').value) || 10;
             
-            let lastTestData;
             for (let i = 0; i < count; i++) {
                 const testData = {
                     timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1331,15 +1368,7 @@
                 });
                 
                 surveyData.push(testData);
-                lastTestData = testData;
-            }
-            
-            // Save to storage
-            if (db) {
-                const newRef = db.ref('responses').push();
-                newRef.set(lastTestData);
-            } else {
-                saveToLocal(lastTestData);
+                saveToLocal(testData);
             }
             
             renderDashboard();
@@ -1348,11 +1377,7 @@
 
         function clearAllData() {
             if (confirm('정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                if (db) {
-                    db.ref('responses').remove();
-                } else {
-                    localStorage.removeItem('survey_responses');
-                }
+                localStorage.removeItem('survey_responses');
                 surveyData = [];
                 renderDashboard();
                 alert('모든 데이터가 삭제되었습니다.');
