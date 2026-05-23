@@ -133,6 +133,9 @@
                         <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
                         <span class="text-xs text-success">실시간 연결됨</span>
                     </div>
+                    <button onclick="refreshDashboard()" id="refresh-btn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-sync-alt"></i> 새로고침
+                    </button>
                     <button onclick="exportData()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition flex items-center gap-2">
                         <i class="fas fa-download"></i> PDF 내보내기
                     </button>
@@ -421,24 +424,112 @@
                         <span class="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning border border-warning/30">필수 설정</span>
                     </div>
                     <p class="text-sm text-textSub mb-4">
-                        다른 기기에서 제출된 응답을 이 대시보드에서 보려면 <strong class="text-white">Google Apps Script 웹훅 URL</strong>을 설정해야 합니다.<br>
-                        설정하지 않으면 <span class="text-warning">이 기기에서 제출한 응답만</span> 대시보드에 표시됩니다.
+                        다른 기기에서 제출된 응답을 이 대시보드에서 보려면 <strong class="text-white">Google Apps Script 웹 앱 URL</strong>을 설정해야 합니다.<br>
+                        URL이 설정되면 대시보드 진입 시 <span class="text-success">모든 기기의 응답이 자동으로 불러와집니다.</span>
                     </p>
 
                     <div class="bg-slate-800/60 rounded-xl p-4 mb-4 text-xs text-textSub space-y-2 border border-slate-700">
                         <p class="text-white font-bold text-sm mb-2"><i class="fas fa-list-ol mr-2 text-primary"></i>Google Apps Script 설정 방법</p>
                         <p>① <a href="https://script.google.com" target="_blank" class="text-primary underline">script.google.com</a> 에서 새 프로젝트 생성</p>
-                        <p>② 아래 코드를 붙여넣기 후 저장:</p>
-                        <pre class="bg-slate-900 rounded p-3 text-xs text-green-300 overflow-x-auto mt-2 leading-relaxed">function doPost(e) {
-  var sheet = SpreadsheetApp.openById('스프레드시트_ID').getActiveSheet();
-  var data = JSON.parse(e.postData.contents);
-  var row = [data.timestamp, data.clientInfo.city,
-             data.clientInfo.maskedIp, JSON.stringify(data.responses)];
-  sheet.appendRow(row);
-  return ContentService.createTextOutput('ok');
+                        <p>② 아래 코드 전체를 붙여넣고 <span class="text-white">YOUR_SPREADSHEET_ID</span> 를 본인 시트 ID로 교체 후 저장:</p>
+                        <pre class="bg-slate-900 rounded p-3 text-xs text-green-300 overflow-x-auto mt-2 leading-relaxed whitespace-pre">// ★ 이 ID를 본인 Google Sheets URL의 /d/[ID]/edit 부분으로 교체
+var SHEET_ID = 'YOUR_SPREADSHEET_ID';
+
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['제출시간','도시','IP','ISP','UA','q1','q2','q3','q4',
+        'q5','q6','q7','q8','q9','q10','q11','q12','q13','q14','q15','q16',
+        'q17','q18','q19','isTest']);
+    }
+    var r = data.responses || {};
+    var getA = function(q){ return r[q] ? r[q].answerIndex : 0; };
+    var getT = function(q){ return r[q] ? r[q].answerText : ''; };
+    sheet.appendRow([
+      data.timestamp,
+      (data.clientInfo||{}).city||'',
+      (data.clientInfo||{}).maskedIp||'',
+      (data.clientInfo||{}).isp||'',
+      (data.userAgent||'').substring(0,80),
+      getA('q1'),getA('q2'),getA('q3'),getA('q4'),getA('q5'),getA('q6'),getA('q7'),
+      getA('q8'),getA('q9'),getA('q10'),getA('q11'),getA('q12'),getA('q13'),getA('q14'),
+      getA('q15'),getA('q16'),getA('q17'),getA('q18'),getA('q19'),
+      data.isTest ? 'TEST' : ''
+    ]);
+    return ContentService.createTextOutput(JSON.stringify({status:'ok'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status:'error',msg:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
+    var rows = sheet.getDataRange().getValues();
+    if (rows.length <= 1) {
+      return ContentService.createTextOutput(JSON.stringify([]))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var qIds = ['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10',
+                'q11','q12','q13','q14','q15','q16','q17','q18','q19'];
+    var qTexts = ['수면영향','심박수반응','각성효과','섭취량','종류','섭취시간대','타임갭',
+                  '수면잠복기','평일취침','기상편차','개선방법','악화원인','뇌파활성화',
+                  '두뇌최고점','오전피로','학업영향','사용시간','야간모드','야간키워드'];
+    var optMap = {
+      q1:['전혀 느끼지 않는다','거의 느끼지 않는다','보통이다','어느 정도 느낀다','매우 심하게 느낀다'],
+      q2:['전혀 변화 없음','미세하게 증가함을 느낌','약간의 두근거림을 느낌','뚜렷하게 두근거림을 느낌','심장이 매우 빠르고 강하게 뜀'],
+      q3:['전혀 효과가 없다','거의 효과가 없다','일시적인 효과가 있다','확실히 효과가 있다','매우 큰 효과가 있다'],
+      q4:['전혀 섭취하지 않음 (0mg)','1 잔 미만 (1~100mg)','1~2 잔 정도 (100~300mg)','3~4 잔 정도 (300~500mg)','5 잔 이상 (500mg 초과)'],
+      q5:['마시지 않음','커피류','고카페인 에너지 드링크류','탄산음료','차 종류 및 기타'],
+      q6:['섭취하지 않음','이른 오전','늦은 오전 ~ 점심','오후','저녁 및 심야'],
+      q7:['섭취하지 않음','취침 12 시간 이상 전','취침 6~12 시간 사이','취침 3~6 시간 사이','취침 3 시간 이내'],
+      q8:['10 분 미만','10~30 분','30 분~1 시간','1~2 시간','2 시간 이상'],
+      q9:['밤 10 시 이전','밤 10 시~자정','자정~새벽 2 시','새벽 2~4 시','새벽 4 시 이후'],
+      q10:['차이 없음','1 시간 정도','2 시간 정도','3 시간 정도','4 시간 이상'],
+      q11:['시도해 본 적 없음','생활 습관 교정','수면 환경 개선','전자기기 사용 제한','의학 및 보조제 도움'],
+      q12:['불규칙한 생활 습관','전자기기 사용','학업/업무 과로','심리적 요인','환경/신체적 요인'],
+      q13:['전혀 달라지지 않는다','거의 달라지지 않는다','보통이다','꽤 많이 달라진다','매우 크게 달라진다'],
+      q14:['새벽~이른 아침','오전','오후','저녁','심야'],
+      q15:['전혀 피로하지 않다','별로 피로하지 않다','보통이다','꽤 피로하다','매우 피로하다'],
+      q16:['전혀 영향을 미치지 않는다','거의 영향을 미치지 않는다','보통이다','꽤 큰 영향을 미친다','매우 치명적인 영향을 미친다'],
+      q17:['1 시간 미만','1~3 시간','3~5 시간','5~7 시간','7 시간 이상'],
+      q18:['전혀 사용하지 않는다','거의 사용하지 않는다','가끔 사용한다','자주 사용한다','항상 켜두고 사용한다'],
+      q19:['야간에 활동하지 않음','유머/엔터테인먼트','일상/공감/소통','취미/관심사','학업/정보 탐색']
+    };
+    var result = [];
+    for (var i = 1; i < rows.length; i++) {
+      var row = rows[i];
+      var responses = {};
+      for (var j = 0; j < qIds.length; j++) {
+        var idx = parseInt(row[5 + j]) || 0;
+        responses[qIds[j]] = {
+          question: qTexts[j],
+          answerIndex: idx,
+          answerText: idx >= 1 && idx <= 5 ? optMap[qIds[j]][idx-1] : ''
+        };
+      }
+      result.push({
+        timestamp: row[0] ? new Date(row[0]).toISOString() : '',
+        clientInfo: { city: row[1]||'', maskedIp: row[2]||'', isp: row[3]||'' },
+        userAgent: row[4]||'',
+        responses: responses,
+        isTest: row[24] === 'TEST',
+        _source: 'gas'
+      });
+    }
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({error:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }</pre>
-                        <p>③ <span class="text-white">배포 → 새 배포 → 웹 앱</span> 선택, 액세스: <span class="text-white">모든 사용자</span>로 설정 후 배포</p>
-                        <p>④ 생성된 웹 앱 URL을 아래에 입력</p>
+                        <p>③ <span class="text-white">배포 → 새 배포 → 웹 앱</span>, 실행 계정: <span class="text-white">나</span>, 액세스: <span class="text-white">모든 사용자</span> → 배포</p>
+                        <p>④ 생성된 웹 앱 URL을 아래에 입력 후 저장</p>
                     </div>
 
                     <div class="flex gap-3 items-center">
@@ -449,7 +540,7 @@
                             <i class="fas fa-save mr-1"></i>저장
                         </button>
                         <button onclick="testGasWebhook()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition whitespace-nowrap">
-                            <i class="fas fa-vial mr-1"></i>테스트
+                            <i class="fas fa-vial mr-1"></i>연결 테스트
                         </button>
                     </div>
                     <p id="gas-status" class="mt-2 text-xs text-textSub"></p>
@@ -738,6 +829,8 @@
             // Google Apps Script 웹훅 또는 localStorage 에 저장
             if (gasWebhookUrl) {
                 try {
+                    // GAS 는 CORS 헤더를 반환하지 않으므로 no-cors 로 전송
+                    // 응답 본문은 읽을 수 없지만 GAS 서버에는 정상 수신됨
                     await fetch(gasWebhookUrl, {
                         method: 'POST',
                         mode: 'no-cors',
@@ -825,11 +918,11 @@
             const statusEl = document.getElementById('gas-status');
             const syncEl = document.getElementById('sync-status');
             if (url) {
-                statusEl.textContent = '✓ URL이 저장되었습니다. 이후 제출부터 크로스-기기 저장이 활성화됩니다.';
+                statusEl.textContent = '✓ URL이 저장되었습니다. 대시보드 새로고침 시 모든 기기 응답이 불러와집니다.';
                 statusEl.className = 'mt-2 text-xs text-success';
                 syncEl.innerHTML = '<i class="fas fa-sync-alt mr-1 text-success"></i><span class="text-success">웹훅 연결됨</span>';
             } else {
-                statusEl.textContent = 'URL이 비워졌습니다. 크로스-기기 저장이 비활성화됩니다.';
+                statusEl.textContent = 'URL이 비워졌습니다. 크로스-기기 동기화가 비활성화됩니다.';
                 statusEl.className = 'mt-2 text-xs text-warning';
                 syncEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span>';
             }
@@ -843,39 +936,98 @@
                 statusEl.className = 'mt-2 text-xs text-warning';
                 return;
             }
-            statusEl.textContent = '테스트 전송 중...';
+            statusEl.textContent = '연결 테스트 중...';
             statusEl.className = 'mt-2 text-xs text-textSub';
-            try {
-                await fetch(url, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ timestamp: new Date().toISOString(), isTest: true, responses: {}, clientInfo: { city: 'Test' } })
-                });
-                statusEl.textContent = '✓ 테스트 전송 완료. Google Sheets에서 수신 여부를 확인하세요.';
+            // 임시로 gasWebhookUrl 을 테스트 URL 로 설정해 fetchFromGAS 호출
+            const prevUrl = gasWebhookUrl;
+            gasWebhookUrl = url;
+            const data = await fetchFromGAS();
+            gasWebhookUrl = prevUrl;
+            if (data.length >= 0) {
+                statusEl.textContent = '✓ 연결 성공! 현재 GAS에 저장된 응답: ' + data.length + '건';
                 statusEl.className = 'mt-2 text-xs text-success';
-            } catch (e) {
-                statusEl.textContent = '✗ 전송 실패: ' + e.message;
+            } else {
+                statusEl.textContent = '✗ 연결 실패. GAS 배포 설정(액세스: 모든 사용자)을 확인하세요.';
                 statusEl.className = 'mt-2 text-xs text-danger';
             }
         }
 
+        // JSONP 방식으로 GAS doGet 호출 — fetch 는 GAS CORS 헤더 부재로 차단되므로
+        // <script> 태그 인젝션을 이용해 크로스-도메인 GET 요청을 우회함
+        function fetchFromGAS() {
+            return new Promise(function(resolve) {
+                if (!gasWebhookUrl) { resolve([]); return; }
+                var cbName = '__gasCb_' + Date.now();
+                var script = document.createElement('script');
+                var timer = setTimeout(function() {
+                    cleanup();
+                    console.error('GAS JSONP timeout');
+                    resolve([]);
+                }, 10000);
+                function cleanup() {
+                    clearTimeout(timer);
+                    delete window[cbName];
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
+                window[cbName] = function(data) {
+                    cleanup();
+                    resolve(Array.isArray(data) ? data : []);
+                };
+                script.src = gasWebhookUrl + '?callback=' + cbName + '&t=' + Date.now();
+                script.onerror = function() { cleanup(); resolve([]); };
+                document.head.appendChild(script);
+            });
+        }
+
         async function loadSurveyData() {
-            // localStorage 에서 로드
-            surveyData = JSON.parse(localStorage.getItem('survey_responses') || '[]');
+            // 1. localStorage 응답 로드
+            const local = JSON.parse(localStorage.getItem('survey_responses') || '[]');
+
+            // 2. GAS 응답 로드 (URL 설정된 경우)
+            let gasData = [];
+            if (gasWebhookUrl) {
+                const syncEl = document.getElementById('sync-status');
+                if (syncEl) syncEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1 text-primary"></i><span class="text-primary">동기화 중...</span>';
+                gasData = await fetchFromGAS();
+                if (syncEl) {
+                    if (gasData.length >= 0) {
+                        syncEl.innerHTML = '<i class="fas fa-sync-alt mr-1 text-success"></i><span class="text-success">동기화 완료 (' + gasData.length + '건)</span>';
+                    } else {
+                        syncEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">동기화 실패</span>';
+                    }
+                }
+            }
+
+            // 3. 중복 제거 후 병합 (timestamp 기준)
+            // GAS 데이터가 마스터, local 중 GAS에 없는 것만 추가
+            const gasTimestamps = new Set(gasData.map(d => d.timestamp));
+            const localOnly = local.filter(d => !gasTimestamps.has(d.timestamp));
+            surveyData = [...gasData, ...localOnly].sort((a, b) =>
+                new Date(a.timestamp) - new Date(b.timestamp)
+            );
+
             renderDashboard();
             updateSystemStatus();
-            // 설정 탭의 GAS URL 입력창 초기화
+
+            // 설정 탭 UI 초기화
             const gasInput = document.getElementById('gas-webhook-input');
             if (gasInput) gasInput.value = gasWebhookUrl;
-            // 동기화 상태 표시 업데이트
-            const syncEl = document.getElementById('sync-status');
-            if (syncEl) {
-                if (gasWebhookUrl) {
-                    syncEl.innerHTML = '<i class="fas fa-sync-alt mr-1 text-success"></i><span class="text-success">웹훅 연결됨</span>';
-                } else {
-                    syncEl.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span>';
-                }
+            const syncEl2 = document.getElementById('sync-status');
+            if (syncEl2 && !gasWebhookUrl) {
+                syncEl2.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-warning"></i><span class="text-warning">웹훅 미설정</span>';
+            }
+        }
+
+        async function refreshDashboard() {
+            const btn = document.getElementById('refresh-btn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 불러오는 중...';
+                btn.disabled = true;
+            }
+            await loadSurveyData();
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i> 새로고침';
+                btn.disabled = false;
             }
         }
 
