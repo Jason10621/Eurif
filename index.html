@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script>tailwind.config={theme:{extend:{fontFamily:{sans:['"Noto Sans KR"','sans-serif']},colors:{bg:'#0f172a',card:'#1e293b',primary:'#6366f1',secondary:'#8b5cf6',accent:'#ec4899',success:'#10b981',warning:'#f59e0b',danger:'#ef4444',textMain:'#f8fafc',textSub:'#94a3b8'}}}}</script>
 <style>
@@ -47,6 +47,17 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 <header class="fixed top-0 w-full z-50 glass border-b border-slate-700/50">
 <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
   <div class="flex items-center gap-3">
+    <!-- DECFI BRAND BLOCK (디자인 추가) -->
+    <div class="flex items-center gap-3 pr-3 mr-1 border-r border-slate-600/60">
+      <div style="font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.08em;color:#3b82f6;font-size:1.5rem;line-height:1;padding:0.45rem 0.9rem;border:1.5px solid #3b82f6;border-radius:4px;">
+        DECFI
+      </div>
+      <div class="leading-tight">
+        <div style="color:#facc15;font-size:0.65rem;font-weight:600;letter-spacing:0.18em;">WEB&nbsp;CREATER</div>
+        <div class="text-white" style="font-size:0.85rem;font-weight:600;margin-top:2px;">10621 이정욱</div>
+      </div>
+    </div>
+    <!-- /DECFI BRAND BLOCK -->
     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
       <i class="fas fa-brain text-white text-lg"></i>
     </div>
@@ -410,8 +421,8 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 //      관리자가 다른 응답자의 응답을 볼 수 없습니다!
 // ═══════════════════════════════════════════════════════════════════
 
-const EMBEDDED_KEY    = '$2a$10$k8m3Bc0bj3CCFd87nHOW4uLWeU5jIhq9gB8SNZo0paK1tuMi..4z.';  // 예: '$2a$10$abcdefg.................'
-const EMBEDDED_BIN_ID = '6a12d5f26877513b27c479fa';  // 예: '65f1a2b3c0e7653a1234abcd'
+const EMBEDDED_KEY    = '';  // 예: '$2a$10$abcdefg.................'
+const EMBEDDED_BIN_ID = '';  // 예: '65f1a2b3c0e7653a1234abcd'
 
 // ═══════════════════════════════════════════════════════════════════
 
