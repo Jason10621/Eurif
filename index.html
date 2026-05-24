@@ -39,16 +39,65 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 .status-ok{background:rgba(16,185,129,.18);color:#10b981;border:1px solid rgba(16,185,129,.3)}
 .status-warn{background:rgba(245,158,11,.18);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
 .status-err{background:rgba(239,68,68,.18);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+
+/* 모바일: brand-bar 추가 높이(~28px)만큼 메인 콘텐츠 패딩 보정 */
+@media(max-width:639px){
+  #sv,#av{ padding-top:7rem!important }
+}
+#brand-bar{display:none}
+@media(max-width:639px){
+  /* 상단 마이크로 바: DECFI + 이름 한 줄 */
+  #brand-bar{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:4px 12px;
+    border-bottom:1px solid rgba(99,102,241,.25);
+    background:rgba(15,23,42,.6);
+  }
+  #brand-bar .b-logo{
+    font-family:'Cinzel',serif;font-weight:700;letter-spacing:.08em;
+    color:#3b82f6;font-size:.7rem;
+    padding:2px 6px;border:1px solid #3b82f6;border-radius:3px;
+    line-height:1.4;white-space:nowrap;
+  }
+  #brand-bar .b-sep{color:rgba(255,255,255,.25);font-size:.7rem}
+  #brand-bar .b-label{color:#facc15;font-size:.58rem;font-weight:600;letter-spacing:.14em;white-space:nowrap}
+  #brand-bar .b-name{color:#e2e8f0;font-size:.68rem;font-weight:500;white-space:nowrap}
+  /* 데스크탑 전용 브랜드 블록 모바일에서 숨기기 */
+  #brand-desktop{display:none!important}
+  /* 헤더 메인 행 간격 축소 */
+  #header-main{padding-top:6px!important;padding-bottom:6px!important}
+  /* 설문 제목 폰트 축소 */
+  #header-main h1{font-size:.9rem!important}
+  #header-main p{font-size:.65rem!important}
+  /* 브레인 아이콘 크기 축소 */
+  #header-main .brain-icon{width:32px!important;height:32px!important}
+  #header-main .brain-icon i{font-size:.85rem!important}
+}
+@media(min-width:640px){
+  /* 데스크탑: 브랜드 바 숨기고 인라인 블록만 표시 */
+  #brand-bar{display:none!important}
+}
 </style>
 </head>
 <body class="font-sans antialiased">
 
 <!-- HEADER -->
 <header class="fixed top-0 w-full z-50 glass border-b border-slate-700/50">
-<div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+
+  <!-- 모바일 전용 브랜드 바 (sm 미만에서만 표시) -->
+  <div id="brand-bar">
+    <span class="b-logo">DECFI</span>
+    <span class="b-sep">·</span>
+    <span class="b-label">WEB&nbsp;CREATER</span>
+    <span class="b-sep">·</span>
+    <span class="b-name">10621 이정욱</span>
+  </div>
+
+  <!-- 헤더 메인 행 -->
+  <div id="header-main" class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
   <div class="flex items-center gap-3">
-    <!-- DECFI BRAND BLOCK (디자인 추가) -->
-    <div class="flex items-center gap-3 pr-3 mr-1 border-r border-slate-600/60">
+    <!-- 데스크탑 전용 브랜드 블록 -->
+    <div id="brand-desktop" class="flex items-center gap-3 pr-3 mr-1 border-r border-slate-600/60">
       <div style="font-family:'Cinzel',serif;font-weight:700;letter-spacing:0.08em;color:#3b82f6;font-size:1.5rem;line-height:1;padding:0.45rem 0.9rem;border:1.5px solid #3b82f6;border-radius:4px;">
         DECFI
       </div>
@@ -57,8 +106,8 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
         <div class="text-white" style="font-size:0.85rem;font-weight:600;margin-top:2px;">10621 이정욱</div>
       </div>
     </div>
-    <!-- /DECFI BRAND BLOCK -->
-    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+    <!-- /브랜드 블록 -->
+    <div class="brain-icon w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
       <i class="fas fa-brain text-white text-lg"></i>
     </div>
     <div>
@@ -110,8 +159,8 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
   <form id="sf" class="hidden space-y-6">
     <div id="qc"></div>
     <div class="pt-6 pb-20 text-center">
-      <button type="button" onclick="submitSurvey()" id="subbtn" class="w-full sm:w-auto px-12 py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition transform hover:scale-105">분석 결과 받기</button>
-      <p class="mt-4 text-xs text-textSub">제출 후 결과는 즉시 분석되어 표시됩니다.</p>
+      <button type="button" onclick="submitSurvey()" id="subbtn" class="w-full sm:w-auto px-12 py-4 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition transform hover:scale-105">제출하기</button>
+      <p class="mt-4 text-xs text-textSub">본 설문은 학술 연구 목적으로만 활용되며, 수집된 응답은 익명으로 처리됩니다.</p>
     </div>
   </form>
 
@@ -421,8 +470,8 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 //      관리자가 다른 응답자의 응답을 볼 수 없습니다!
 // ═══════════════════════════════════════════════════════════════════
 
-const EMBEDDED_KEY    = '$2a$10$k8m3Bc0bj3CCFd87nHOW4uLWeU5jIhq9gB8SNZo0paK1tuMi..4z.';  // 예: '$2a$10$abcdefg.................'
-const EMBEDDED_BIN_ID = '6a12d5f26877513b27c479fa';  // 예: '65f1a2b3c0e7653a1234abcd'
+const EMBEDDED_KEY    = '';  // 예: '$2a$10$abcdefg.................'
+const EMBEDDED_BIN_ID = '';  // 예: '65f1a2b3c0e7653a1234abcd'
 
 // ═══════════════════════════════════════════════════════════════════
 
