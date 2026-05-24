@@ -18,6 +18,7 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 .scard{background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(139,92,246,.12));border:1px solid rgba(99,102,241,.3);transition:all .3s}
 .scard:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(99,102,241,.2)}
 .chart-box{position:relative;height:280px;width:100%}
+.chart-box-lg{position:relative;height:360px;width:100%}
 .view{display:none}.view.on{display:block}
 .tb{transition:all .3s;border-bottom:2px solid transparent}.tb.on{border-bottom-color:#6366f1;color:#6366f1}
 .ip-b{background:linear-gradient(135deg,#1e293b,#334155);border:1px solid #475569;font-family:'Courier New',monospace;font-size:.7rem}
@@ -30,6 +31,14 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:#0f172a}
 ::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
+.db-row{cursor:pointer;transition:background .15s}
+.db-row:hover{background:rgba(99,102,241,.08)}
+.db-detail{background:rgba(15,23,42,.6)}
+.qbox{background:rgba(30,41,59,.45);border-left:3px solid #6366f1}
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.status-ok{background:rgba(16,185,129,.18);color:#10b981;border:1px solid rgba(16,185,129,.3)}
+.status-warn{background:rgba(245,158,11,.18);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
+.status-err{background:rgba(239,68,68,.18);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
 </style>
 </head>
 <body class="font-sans antialiased">
@@ -101,7 +110,7 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
       <i class="fas fa-check text-3xl text-success"></i>
     </div>
     <h2 class="text-2xl font-bold mb-4">설문이 완료되었습니다!</h2>
-    <p class="text-textSub mb-8">소중한 의견을 보내주셔서 감사합니다.<br>데이터는 실시간으로 분석 시스템에 전송되었습니다.</p>
+    <p class="text-textSub mb-8" id="rs-msg">소중한 의견을 보내주셔서 감사합니다.<br>데이터는 실시간으로 분석 시스템에 전송되었습니다.</p>
     <button onclick="location.reload()" class="text-primary hover:underline">홈으로 돌아가기</button>
   </div>
 </main>
@@ -110,12 +119,14 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 <main id="av" class="view pt-24 pb-12 px-4 max-w-7xl mx-auto">
   <div class="flex gap-4 mb-8 border-b border-slate-700 overflow-x-auto">
     <button onclick="switchTab('ov')" id="t-ov" class="tb on pb-3 text-sm font-medium text-white whitespace-nowrap"><i class="fas fa-chart-pie mr-2"></i>개요 및 통계</button>
+    <button onclick="switchTab('vz')" id="t-vz" class="tb pb-3 text-sm font-medium text-textSub hover:text-white whitespace-nowrap"><i class="fas fa-chart-bar mr-2"></i>상세 시각화</button>
     <button onclick="switchTab('co')" id="t-co" class="tb pb-3 text-sm font-medium text-textSub hover:text-white whitespace-nowrap"><i class="fas fa-project-diagram mr-2"></i>상관관계 분석</button>
+    <button onclick="switchTab('db')" id="t-db" class="tb pb-3 text-sm font-medium text-textSub hover:text-white whitespace-nowrap"><i class="fas fa-database mr-2"></i>응답 데이터베이스</button>
     <button onclick="switchTab('rd')" id="t-rd" class="tb pb-3 text-sm font-medium text-textSub hover:text-white whitespace-nowrap"><i class="fas fa-table mr-2"></i>원본 데이터</button>
     <button onclick="switchTab('st')" id="t-st" class="tb pb-3 text-sm font-medium text-textSub hover:text-white whitespace-nowrap"><i class="fas fa-cog mr-2"></i>설정</button>
   </div>
 
-  <!-- OV -->
+  <!-- OV: 개요 -->
   <div id="c-ov" class="tc">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       <div class="scard rounded-2xl p-5"><p class="text-textSub text-xs mb-1">총 응답자</p><h3 class="text-3xl font-bold text-white" id="st0">0</h3><div class="text-xs text-success mt-2"><i class="fas fa-circle animate-pulse mr-1"></i>실시간 수집 중</div></div>
@@ -142,7 +153,34 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
     </div>
   </div>
 
-  <!-- CO -->
+  <!-- VZ: 상세 시각화 (신규 추가) -->
+  <div id="c-vz" class="tc hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4"><i class="fas fa-coffee mr-2 text-warning"></i>카페인 음료 종류별 분포</h3><div class="chart-box"><canvas id="vz1"></canvas></div></div>
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4"><i class="fas fa-clock mr-2 text-primary"></i>카페인 섭취 시간대</h3><div class="chart-box"><canvas id="vz2"></canvas></div></div>
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4"><i class="fas fa-bed mr-2 text-secondary"></i>수면 잠복기 분포</h3><div class="chart-box"><canvas id="vz3"></canvas></div></div>
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4"><i class="fas fa-sun mr-2 text-accent"></i>오전 피로도 분포</h3><div class="chart-box"><canvas id="vz4"></canvas></div></div>
+    </div>
+    <div class="glass rounded-2xl p-6 mb-6">
+      <h3 class="text-base font-bold text-white mb-4"><i class="fas fa-chart-radar mr-2 text-primary"></i>카테고리별 평균 응답 강도 (레이더)</h3>
+      <div class="chart-box-lg"><canvas id="vz5"></canvas></div>
+      <p class="text-xs text-textSub mt-3 text-center">5점 척도 기준 각 카테고리 평균 응답값. 외곽에 가까울수록 응답 강도가 높음.</p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4"><i class="fas fa-mobile-alt mr-2 text-success"></i>야간 콘텐츠 소비 분포</h3><div class="chart-box"><canvas id="vz6"></canvas></div></div>
+      <div class="glass rounded-2xl p-6"><h3 class="text-base font-bold text-white mb-4"><i class="fas fa-moon mr-2 text-secondary"></i>야간 모드 사용 빈도</h3><div class="chart-box"><canvas id="vz7"></canvas></div></div>
+    </div>
+    <div class="glass rounded-2xl p-6 mb-6">
+      <h3 class="text-base font-bold text-white mb-4"><i class="fas fa-calendar-alt mr-2 text-warning"></i>일별 응답 추이 (최근 14일)</h3>
+      <div class="chart-box-lg"><canvas id="vz8"></canvas></div>
+    </div>
+    <div class="glass rounded-2xl p-6">
+      <h3 class="text-base font-bold text-white mb-4"><i class="fas fa-map-marked-alt mr-2 text-accent"></i>지역별 응답 분포 (상위 10)</h3>
+      <div class="chart-box"><canvas id="vz9"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CO: 상관관계 -->
   <div id="c-co" class="tc hidden">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       <div class="glass rounded-2xl p-6">
@@ -161,7 +199,52 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
     </div>
   </div>
 
-  <!-- RD -->
+  <!-- DB: 응답 데이터베이스 (신규 추가) -->
+  <div id="c-db" class="tc hidden">
+    <div class="glass rounded-2xl p-6 mb-6">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+        <div>
+          <h3 class="text-lg font-bold text-white"><i class="fas fa-database mr-2 text-primary"></i>전체 응답 데이터베이스</h3>
+          <p class="text-xs text-textSub mt-1">각 응답자의 모든 문항 답변을 직접 확인할 수 있습니다. 행을 클릭하면 상세 응답이 펼쳐집니다.</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <input type="text" id="db-search" placeholder="검색 (ID/위치/답변...)" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary w-full sm:w-56" oninput="renderDB()">
+          <select id="db-filter" onchange="renderDB()" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
+            <option value="all">전체 응답</option>
+            <option value="real">실제 응답만</option>
+            <option value="test">테스트 응답만</option>
+          </select>
+          <button onclick="exportCSV()" class="px-3 py-2 bg-success/20 hover:bg-success/30 text-success text-sm rounded-lg transition border border-success/30"><i class="fas fa-file-csv mr-1"></i>CSV 내보내기</button>
+          <button onclick="exportJSON()" class="px-3 py-2 bg-primary/20 hover:bg-primary/30 text-primary text-sm rounded-lg transition border border-primary/30"><i class="fas fa-file-code mr-1"></i>JSON 내보내기</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700"><p class="text-xs text-textSub">표시 중</p><p class="text-xl font-bold text-white" id="db-count">0</p></div>
+        <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700"><p class="text-xs text-textSub">실제 응답</p><p class="text-xl font-bold text-success" id="db-real">0</p></div>
+        <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700"><p class="text-xs text-textSub">테스트</p><p class="text-xl font-bold text-warning" id="db-test">0</p></div>
+        <div class="bg-slate-800/50 rounded-lg p-3 border border-slate-700"><p class="text-xs text-textSub">총 데이터</p><p class="text-xl font-bold text-primary" id="db-total">0</p></div>
+      </div>
+      <div class="overflow-x-auto max-h-[600px] border border-slate-700 rounded-xl">
+        <table class="w-full text-xs text-left">
+          <thead class="text-xs text-textSub uppercase bg-slate-800 sticky top-0 z-10">
+            <tr>
+              <th class="px-3 py-3 w-8"></th>
+              <th class="px-3 py-3">ID</th>
+              <th class="px-3 py-3">제출 시간</th>
+              <th class="px-3 py-3">위치</th>
+              <th class="px-3 py-3">IP</th>
+              <th class="px-3 py-3">브라우저</th>
+              <th class="px-3 py-3">유형</th>
+              <th class="px-3 py-3 w-12"></th>
+            </tr>
+          </thead>
+          <tbody id="db-body" class="divide-y divide-slate-800"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- RD: 원본 데이터 -->
   <div id="c-rd" class="tc hidden">
     <div class="glass rounded-2xl p-6">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
@@ -184,40 +267,62 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
     </div>
   </div>
 
-  <!-- ST -->
+  <!-- ST: 설정 -->
   <div id="c-st" class="tc hidden">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- JSONBin 설정 -->
+      <!-- 클라우드 동기화 상태 -->
       <div class="glass rounded-2xl p-6 md:col-span-2 border border-primary/30">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center"><i class="fas fa-database text-primary text-sm"></i></div>
-          <h3 class="text-base font-bold text-white">JSONBin.io 크로스-기기 실시간 동기화</h3>
+          <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center"><i class="fas fa-cloud text-primary text-sm"></i></div>
+          <h3 class="text-base font-bold text-white">클라우드 동기화 상태</h3>
         </div>
-        <p class="text-sm text-textSub mb-4">JSONBin.io 무료 계정을 만들고 <strong class="text-white">Master Key</strong>와 <strong class="text-white">Bin ID</strong>를 입력하면 모든 기기에서 응답이 실시간으로 동기화됩니다.</p>
-        <div class="bg-slate-800/60 rounded-xl p-4 mb-4 text-xs text-textSub space-y-1.5 border border-slate-700">
-          <p class="text-white font-semibold text-sm mb-2"><i class="fas fa-list-ol mr-2 text-primary"></i>설정 방법 (3분 소요)</p>
-          <p>① <a href="https://jsonbin.io" target="_blank" class="text-primary underline">jsonbin.io</a> 에서 무료 회원가입</p>
-          <p>② 로그인 후 <span class="text-white">API Keys</span> → <span class="text-white">Master Key</span> 복사</p>
-          <p>③ <span class="text-white">Create Bin</span> 클릭 → Name: <code class="bg-slate-700 px-1 rounded">sleep-survey</code>, Private: OFF → 생성</p>
-          <p>④ 생성된 Bin의 <span class="text-white">Bin ID</span> 복사 (URL에서 확인)</p>
-          <p>⑤ 아래에 두 값을 입력하고 <span class="text-white">저장</span></p>
+        <div class="bg-slate-800/60 rounded-xl p-4 mb-4 border border-slate-700">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-textSub">연결 상태</span>
+            <span id="sync-status" class="status-pill status-warn"><i class="fas fa-spinner sp"></i>확인 중...</span>
+          </div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-textSub">저장된 응답 수</span>
+            <span id="sync-count" class="text-white font-bold">-</span>
+          </div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-textSub">마지막 응답</span>
+            <span id="sync-last" class="text-white text-sm">-</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-textSub">데이터 소스</span>
+            <span id="sync-source" class="text-white text-sm">-</span>
+          </div>
         </div>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="testConnection()" class="px-4 py-2 bg-primary hover:bg-indigo-500 text-white text-xs rounded-lg transition"><i class="fas fa-vial mr-1"></i>연결 진단 테스트</button>
+          <button onclick="forceSyncAll()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition"><i class="fas fa-sync mr-1"></i>강제 전체 동기화</button>
+          <button onclick="pushLocalToCloud()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition"><i class="fas fa-upload mr-1"></i>로컬→클라우드 업로드</button>
+        </div>
+        <p id="sync-msg" class="mt-3 text-xs text-textSub"></p>
+      </div>
+
+      <!-- 고급 설정 (커스텀 키 덮어쓰기) -->
+      <div class="glass rounded-2xl p-6 md:col-span-2">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center"><i class="fas fa-tools text-warning text-sm"></i></div>
+          <h3 class="text-base font-bold text-white">고급 설정 (선택사항)</h3>
+        </div>
+        <p class="text-xs text-textSub mb-3">기본적으로 코드에 내장된 공용 저장소를 사용합니다. 별도 JSONBin 계정을 사용하고 싶을 때만 아래 값을 입력하세요.</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <label class="text-xs text-textSub mb-1 block">Master Key</label>
-            <input type="password" id="jbkey" placeholder="$2a$10$..." class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-xs focus:outline-none focus:border-primary">
+            <label class="text-xs text-textSub mb-1 block">Master Key (선택)</label>
+            <input type="password" id="jbkey" placeholder="비워두면 기본값 사용" class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-xs focus:outline-none focus:border-primary">
           </div>
           <div>
-            <label class="text-xs text-textSub mb-1 block">Bin ID</label>
-            <input type="text" id="jbid" placeholder="6849..." class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-xs focus:outline-none focus:border-primary">
+            <label class="text-xs text-textSub mb-1 block">Bin ID (선택)</label>
+            <input type="text" id="jbid" placeholder="비워두면 기본값 사용" class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white text-xs focus:outline-none focus:border-primary">
           </div>
         </div>
         <div class="flex gap-2">
           <button onclick="saveJBConfig()" class="px-4 py-2 bg-primary hover:bg-indigo-500 text-white text-xs rounded-lg transition"><i class="fas fa-save mr-1"></i>저장</button>
-          <button onclick="testJBConfig()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition"><i class="fas fa-vial mr-1"></i>연결 테스트</button>
-          <button onclick="pushLocalToJB()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition"><i class="fas fa-upload mr-1"></i>로컬→클라우드 업로드</button>
+          <button onclick="resetJBConfig()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition"><i class="fas fa-undo mr-1"></i>기본값으로 복원</button>
         </div>
-        <p id="jbst" class="mt-2 text-xs text-textSub"></p>
       </div>
 
       <!-- 테스트 데이터 -->
@@ -230,19 +335,17 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
             <input type="number" id="tc" value="5" min="1" max="50" class="bg-slate-800 border border-slate-600 rounded px-3 py-1 text-white w-20 text-center">
           </div>
           <button onclick="genTestData()" class="w-full py-2 bg-primary hover:bg-indigo-500 text-white rounded-lg transition text-sm"><i class="fas fa-magic mr-2"></i>테스트 데이터 생성</button>
+          <button onclick="clearTestData()" class="w-full py-2 bg-warning hover:bg-amber-600 text-white rounded-lg transition text-sm"><i class="fas fa-broom mr-2"></i>테스트 데이터만 삭제</button>
           <button onclick="clearData()" class="w-full py-2 bg-danger hover:bg-red-600 text-white rounded-lg transition text-sm"><i class="fas fa-trash mr-2"></i>모든 데이터 삭제</button>
         </div>
       </div>
 
-      <!-- 시스템 상태 -->
+      <!-- 진단 로그 -->
       <div class="glass rounded-2xl p-6">
-        <h3 class="text-base font-bold text-white mb-3">시스템 상태</h3>
-        <div class="space-y-3">
-          <div class="flex justify-between py-2 border-b border-slate-700"><span class="text-sm text-textSub">JSONBin 연결</span><span id="dbs" class="text-sm text-textSub">-</span></div>
-          <div class="flex justify-between py-2 border-b border-slate-700"><span class="text-sm text-textSub">총 응답 수</span><span id="dbc" class="text-sm text-white">0개</span></div>
-          <div class="flex justify-between py-2 border-b border-slate-700"><span class="text-sm text-textSub">마지막 응답</span><span id="lrt" class="text-sm text-white">-</span></div>
-          <div class="flex justify-between py-2"><span class="text-sm text-textSub">데이터 소스</span><span id="dsr" class="text-sm text-textSub">-</span></div>
-        </div>
+        <h3 class="text-base font-bold text-white mb-3"><i class="fas fa-clipboard-list mr-2"></i>진단 로그</h3>
+        <p class="text-xs text-textSub mb-3">동기화 및 오류 로그를 확인합니다.</p>
+        <div id="diag-log" class="bg-slate-900/80 border border-slate-700 rounded-lg p-3 text-xs text-textSub font-mono h-48 overflow-y-auto">대시보드 열림. 진단 로그가 여기에 표시됩니다.</div>
+        <button onclick="clearLog()" class="mt-2 px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded transition"><i class="fas fa-times mr-1"></i>로그 지우기</button>
       </div>
     </div>
   </div>
@@ -265,6 +368,20 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
   </div>
 </div>
 
+<!-- DB DETAIL MODAL -->
+<div id="dm" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="bg-card w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 shadow-2xl">
+    <div class="sticky top-0 bg-card border-b border-slate-700 px-6 py-4 flex justify-between items-center z-10">
+      <div>
+        <h2 class="text-lg font-bold text-white" id="dm-title">응답 상세보기</h2>
+        <p class="text-xs text-textSub" id="dm-subtitle">-</p>
+      </div>
+      <button onclick="closeDetailModal()" class="text-textSub hover:text-white p-2"><i class="fas fa-times text-lg"></i></button>
+    </div>
+    <div id="dm-body" class="p-6"></div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="fixed bottom-6 right-6 z-[200] hidden">
   <div class="glass rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl max-w-xs">
@@ -274,18 +391,58 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-//  CONFIG & STATE
-// ═══════════════════════════════════════════════════════
-const JB_BASE = 'https://api.jsonbin.io/v3/b';
-let jbKey = localStorage.getItem('jb_key') || '';
-let jbBinId = localStorage.getItem('jb_bin_id') || '';
-let allData = [];   // merged data
-let charts = {};
+// ═══════════════════════════════════════════════════════════════════
+//  ⚙️  CONFIGURATION - 코드 내장형 클라우드 동기화 설정
+// ═══════════════════════════════════════════════════════════════════
+//
+//  ★ 중요: 아래 두 값을 본인의 JSONBin.io 정보로 채우면
+//          모든 응답자의 응답이 자동으로 한 곳에 모입니다.
+//          (응답자는 별도 설정이 전혀 필요 없습니다)
+//
+//  설정 방법:
+//   1) https://jsonbin.io 에서 무료 회원가입 (1분)
+//   2) 로그인 → 좌측 메뉴 "API Keys" → "X-MASTER-KEY" 복사
+//   3) 좌측 메뉴 "Bins" → "CREATE BIN" → 빈 JSON {"responses":[]} 입력 → SAVE
+//   4) 생성된 Bin의 ID 복사 (URL 끝부분 또는 상세 화면)
+//   5) 아래 EMBEDDED_KEY, EMBEDDED_BIN_ID 두 값에 붙여넣고 저장 → GitHub Pages 재배포
+//
+//  ⚠️  값을 채우지 않으면 응답이 응답자 본인 브라우저에만 저장되어
+//      관리자가 다른 응답자의 응답을 볼 수 없습니다!
+// ═══════════════════════════════════════════════════════════════════
 
-// ═══════════════════════════════════════════════════════
-//  QUESTIONS
-// ═══════════════════════════════════════════════════════
+const EMBEDDED_KEY    = '$2a$10$k8m3Bc0bj3CCFd87nHOW4uLWeU5jIhq9gB8SNZo0paK1tuMi..4z.';  // 예: '$2a$10$abcdefg.................'
+const EMBEDDED_BIN_ID = '6a12d5f26877513b27c479fa';  // 예: '65f1a2b3c0e7653a1234abcd'
+
+// ═══════════════════════════════════════════════════════════════════
+
+const ADMIN_PASSWORD = 'admin10621';
+const JB_BASE = 'https://api.jsonbin.io/v3/b';
+
+// localStorage 우선순위: 사용자가 설정 화면에서 덮어쓴 값 > 코드 내장값
+let jbKey   = localStorage.getItem('jb_key_override') || EMBEDDED_KEY;
+let jbBinId = localStorage.getItem('jb_bin_id_override') || EMBEDDED_BIN_ID;
+
+let allData = [];
+let charts = {};
+let dbExpanded = new Set();
+
+// ═══════════════════════════════════════════════════════════════════
+//  로깅
+// ═══════════════════════════════════════════════════════════════════
+function dlog(msg, type='info') {
+  const el = document.getElementById('diag-log');
+  if (!el) return;
+  const ts = new Date().toLocaleTimeString('ko-KR');
+  const color = {info:'#94a3b8', ok:'#10b981', warn:'#f59e0b', err:'#ef4444'}[type] || '#94a3b8';
+  el.innerHTML += `<div><span style="color:#64748b">[${ts}]</span> <span style="color:${color}">${msg}</span></div>`;
+  el.scrollTop = el.scrollHeight;
+  console.log(`[${type}] ${msg}`);
+}
+function clearLog() { document.getElementById('diag-log').innerHTML='로그 지움.'; }
+
+// ═══════════════════════════════════════════════════════════════════
+//  QUESTIONS / OPTIONS
+// ═══════════════════════════════════════════════════════════════════
 const Qs = [
   {id:'q1',cat:'caffeine',lbl:'수면영향',txt:'카페인을 섭취한 날, 수면에 미치는 영향 (입면 지연, 수면 중간 깸 등)을 얼마나 느끼시나요?'},
   {id:'q2',cat:'caffeine',lbl:'심박수반응',txt:'카페인 섭취 후 심장 두근거림이나 심박수 증가 현상을 어느 정도로 체감하시나요?'},
@@ -337,93 +494,187 @@ const CatLabels = {
   digital:'섹션 4 · 디지털 기기 사용 및 야간 활동'
 };
 
-// ═══════════════════════════════════════════════════════
-//  JSONBIN API
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  JSONBIN API - 견고한 read/write 패턴
+// ═══════════════════════════════════════════════════════════════════
+function hasCloudConfig() { return !!(jbKey && jbBinId); }
+
 async function jbRead() {
-  if (!jbKey || !jbBinId) return null;
+  if (!hasCloudConfig()) return null;
   try {
-    const r = await fetch(`${JB_BASE}/${jbBinId}/latest`, {
-      headers: {'X-Master-Key': jbKey}
+    const r = await fetch(`${JB_BASE}/${jbBinId}/latest?meta=false`, {
+      method: 'GET',
+      headers: {'X-Master-Key': jbKey, 'X-Bin-Meta': 'false'},
+      cache: 'no-store'
     });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      dlog(`jbRead 실패: HTTP ${r.status}`, 'err');
+      return null;
+    }
     const d = await r.json();
-    return d.record?.responses || [];
-  } catch { return null; }
+    // 응답 형태: 두 가지 모두 처리 (meta off 시는 직접 record, 그 외엔 d.record)
+    const rec = (d && d.record !== undefined) ? d.record : d;
+    const arr = (rec && Array.isArray(rec.responses)) ? rec.responses : [];
+    return arr;
+  } catch (e) {
+    dlog('jbRead 예외: ' + e.message, 'err');
+    return null;
+  }
 }
 
 async function jbWrite(arr) {
-  if (!jbKey || !jbBinId) return false;
+  if (!hasCloudConfig()) return false;
   try {
     const r = await fetch(`${JB_BASE}/${jbBinId}`, {
       method: 'PUT',
       headers: {'Content-Type':'application/json','X-Master-Key':jbKey},
       body: JSON.stringify({responses: arr})
     });
-    return r.ok;
-  } catch { return false; }
+    if (!r.ok) {
+      dlog(`jbWrite 실패: HTTP ${r.status}`, 'err');
+      return false;
+    }
+    return true;
+  } catch (e) {
+    dlog('jbWrite 예외: ' + e.message, 'err');
+    return false;
+  }
 }
 
-// ═══════════════════════════════════════════════════════
-//  LOCAL STORAGE
-// ═══════════════════════════════════════════════════════
-function lsGet() { return JSON.parse(localStorage.getItem('sv_res') || '[]'); }
-function lsAdd(e) { const a=lsGet(); a.push(e); localStorage.setItem('sv_res', JSON.stringify(a)); }
-function lsClear() { localStorage.removeItem('sv_res'); }
+// 핵심: 동시 응답 대비 read-merge-write 패턴 + 재시도
+async function appendToCloud(entry, maxRetries=3) {
+  if (!hasCloudConfig()) {
+    dlog('클라우드 미설정 - 로컬에만 저장됨', 'warn');
+    return false;
+  }
+  for (let attempt=1; attempt<=maxRetries; attempt++) {
+    try {
+      const current = await jbRead();
+      if (current === null) {
+        dlog(`appendToCloud[${attempt}/${maxRetries}] read 실패`, 'warn');
+        await new Promise(r=>setTimeout(r, 300*attempt));
+        continue;
+      }
+      // 중복 체크 (timestamp + IP 기반)
+      const dupKey = entry.timestamp + '|' + (entry.clientInfo?.ip||'?');
+      const exists = current.some(d => (d.timestamp + '|' + (d.clientInfo?.ip||'?')) === dupKey);
+      if (exists) {
+        dlog('중복 응답 감지 - 클라우드 추가 건너뜀', 'warn');
+        return true;
+      }
+      const merged = [...current, entry];
+      const ok = await jbWrite(merged);
+      if (ok) {
+        dlog(`✓ 클라우드 업로드 성공 (총 ${merged.length}개)`, 'ok');
+        return true;
+      }
+      dlog(`appendToCloud[${attempt}/${maxRetries}] write 실패`, 'warn');
+      await new Promise(r=>setTimeout(r, 300*attempt));
+    } catch (e) {
+      dlog(`appendToCloud[${attempt}/${maxRetries}] 예외: ${e.message}`, 'err');
+      await new Promise(r=>setTimeout(r, 300*attempt));
+    }
+  }
+  return false;
+}
 
-// ═══════════════════════════════════════════════════════
-//  MERGE DATA (JB + local)
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  로컬 저장소 (백업용)
+// ═══════════════════════════════════════════════════════════════════
+function lsGet() { try { return JSON.parse(localStorage.getItem('sv_res')||'[]'); } catch { return []; } }
+function lsAdd(e) { const a=lsGet(); a.push(e); localStorage.setItem('sv_res', JSON.stringify(a)); }
+function lsSet(arr) { localStorage.setItem('sv_res', JSON.stringify(arr)); }
+function lsClear() { localStorage.removeItem('sv_res'); }
+function getPendingQueue() { try { return JSON.parse(localStorage.getItem('sv_pending')||'[]'); } catch { return []; } }
+function setPendingQueue(arr) { localStorage.setItem('sv_pending', JSON.stringify(arr)); }
+function addToPendingQueue(e) { const q=getPendingQueue(); q.push(e); setPendingQueue(q); }
+
+// 재시도 큐: 페이지 로드 시 대기 응답 자동 업로드
+async function flushPendingQueue() {
+  if (!hasCloudConfig()) return;
+  const q = getPendingQueue();
+  if (!q.length) return;
+  dlog(`대기 큐에 ${q.length}개 미전송 응답 발견. 재전송 시도...`, 'info');
+  const remaining = [];
+  for (const e of q) {
+    const ok = await appendToCloud(e);
+    if (!ok) remaining.push(e);
+  }
+  setPendingQueue(remaining);
+  if (remaining.length === 0) dlog('대기 큐 전체 전송 완료', 'ok');
+  else dlog(`대기 큐 ${remaining.length}개 여전히 대기 중`, 'warn');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  데이터 병합
+// ═══════════════════════════════════════════════════════════════════
 async function loadAllData() {
   const local = lsGet();
-  const jb = await jbRead();
+  const cloud = await jbRead();
 
-  if (jb !== null) {
-    // JB가 연결됨: JB 기준, 로컬에만 있는 것 추가
-    const jbTs = new Set(jb.map(d=>d.timestamp));
-    const localOnly = local.filter(d=>!jbTs.has(d.timestamp));
-    allData = [...jb, ...localOnly].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-    updateSysStatus(true, 'JSONBin.io');
+  if (cloud !== null) {
+    // 클라우드 우선, 로컬에만 있는 응답(아직 미동기화)도 포함
+    const keyOf = d => (d.timestamp || '') + '|' + (d.clientInfo?.ip || '?');
+    const cloudKeys = new Set(cloud.map(keyOf));
+    const localOnly = local.filter(d => !cloudKeys.has(keyOf(d)));
+    allData = [...cloud, ...localOnly].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+    updateSysStatus(true, 'JSONBin.io 클라우드');
+    dlog(`데이터 로드: 클라우드 ${cloud.length} + 로컬 전용 ${localOnly.length} = 총 ${allData.length}`, 'ok');
   } else {
-    // JB 없음: 로컬만
     allData = local.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-    updateSysStatus(false, '로컬 저장소');
+    if (hasCloudConfig()) {
+      updateSysStatus(false, '⚠ 클라우드 연결 실패 (로컬 표시)');
+      dlog('클라우드 연결 실패 - 로컬 데이터만 표시', 'err');
+    } else {
+      updateSysStatus(false, '로컬 저장소 (클라우드 미설정)');
+      dlog('클라우드 미설정 상태 - 로컬 데이터만 표시', 'warn');
+    }
   }
 }
 
 function updateSysStatus(connected, src) {
-  const ds = document.getElementById('dbs');
-  const dsr = document.getElementById('dsr');
-  if (ds) ds.innerHTML = connected
-    ? '<i class="fas fa-check-circle text-success mr-1"></i><span class="text-success">연결됨</span>'
-    : '<i class="fas fa-exclamation-triangle text-warning mr-1"></i><span class="text-warning">미연결 (로컬)</span>';
-  if (dsr) dsr.textContent = src;
-  document.getElementById('dbc').textContent = allData.length + '개';
-  if (allData.length > 0) {
-    document.getElementById('lrt').textContent = new Date(allData[allData.length-1].timestamp).toLocaleString('ko-KR');
+  const ss = document.getElementById('sync-status');
+  const sc = document.getElementById('sync-count');
+  const sl = document.getElementById('sync-last');
+  const so = document.getElementById('sync-source');
+  if (ss) {
+    if (connected) ss.innerHTML='<i class="fas fa-check-circle"></i>연결됨', ss.className='status-pill status-ok';
+    else if (hasCloudConfig()) ss.innerHTML='<i class="fas fa-exclamation-triangle"></i>연결 실패', ss.className='status-pill status-err';
+    else ss.innerHTML='<i class="fas fa-exclamation-triangle"></i>미설정', ss.className='status-pill status-warn';
   }
+  if (sc) sc.textContent = allData.length + '개';
+  if (sl) sl.textContent = allData.length ? new Date(allData[allData.length-1].timestamp).toLocaleString('ko-KR') : '-';
+  if (so) so.textContent = src;
 }
 
-// ═══════════════════════════════════════════════════════
-//  IP 감지
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  IP / 위치 정보
+// ═══════════════════════════════════════════════════════════════════
 async function getClientInfo() {
-  try {
-    const r = await fetch('https://ipapi.co/json/');
-    const d = await r.json();
-    return {
-      ip: d.ip||'Unknown',
-      maskedIp: (d.ip||'?').split('.').slice(0,3).join('.')+'.***',
-      city: d.city||'Unknown', country: d.country_name||'Unknown', isp: d.org||'Unknown'
-    };
-  } catch {
-    return {ip:'Unknown',maskedIp:'***.***.***.***',city:'Unknown',country:'Unknown',isp:'Unknown'};
+  // 두 가지 서비스에 fallback
+  const tryEndpoints = [
+    {url:'https://ipapi.co/json/', fn:d=>({ip:d.ip,city:d.city,country:d.country_name,isp:d.org})},
+    {url:'https://api.ipify.org?format=json', fn:d=>({ip:d.ip,city:'Unknown',country:'Unknown',isp:'Unknown'})}
+  ];
+  for (const ep of tryEndpoints) {
+    try {
+      const r = await fetch(ep.url);
+      if (!r.ok) continue;
+      const d = await r.json();
+      const i = ep.fn(d);
+      return {
+        ip: i.ip||'Unknown',
+        maskedIp: (i.ip||'?').split('.').slice(0,3).join('.')+'.***',
+        city: i.city||'Unknown', country: i.country||'Unknown', isp: i.isp||'Unknown'
+      };
+    } catch {}
   }
+  return {ip:'Unknown',maskedIp:'***.***.***.***',city:'Unknown',country:'Unknown',isp:'Unknown'};
 }
 
-// ═══════════════════════════════════════════════════════
-//  TOAST
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  토스트
+// ═══════════════════════════════════════════════════════════════════
 let toastTimer;
 function toast(msg, type='success') {
   clearTimeout(toastTimer);
@@ -435,12 +686,16 @@ function toast(msg, type='success') {
   toastTimer = setTimeout(()=>el.classList.add('hidden'), 3500);
 }
 
-// ═══════════════════════════════════════════════════════
-//  SURVEY RENDER
-// ═══════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+// ═══════════════════════════════════════════════════════════════════
+//  초기화
+// ═══════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
   renderQuestions();
   document.getElementById('ap').addEventListener('keypress', e=>{ if(e.key==='Enter') checkAdmin(); });
+  // 페이지 로드 시 대기 큐 자동 전송
+  if (hasCloudConfig()) {
+    flushPendingQueue();
+  }
 });
 
 function renderQuestions() {
@@ -487,6 +742,9 @@ function updateProg() {
   document.getElementById('ptxt').textContent = pct + '% 완료';
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  설문 제출 - 핵심 로직 (반드시 클라우드에 전송 + 실패 시 큐잉)
+// ═══════════════════════════════════════════════════════════════════
 async function submitSurvey() {
   const unan = Qs.filter(q=>!document.querySelector(`input[name="${q.id}"]:checked`));
   if (unan.length) {
@@ -507,31 +765,49 @@ async function submitSurvey() {
     const v = parseInt(document.querySelector(`input[name="${q.id}"]:checked`).value);
     res[q.id] = {question:q.txt, category:q.cat, answerIndex:v, answerText:Opts[q.id][v-1]};
   });
-  const entry = {timestamp:new Date().toISOString(), responses:res, clientInfo:ci, userAgent:navigator.userAgent, isTest:false};
+  const entry = {
+    timestamp: new Date().toISOString(),
+    responses: res,
+    clientInfo: ci,
+    userAgent: navigator.userAgent,
+    isTest: false
+  };
 
-  // 로컬 저장 (항상)
+  // 1) 로컬 저장 (백업)
   lsAdd(entry);
 
-  // JSONBin 저장 (설정된 경우)
-  if (jbKey && jbBinId) {
-    const cur = await jbRead() || [];
-    cur.push(entry);
-    await jbWrite(cur);
+  // 2) 클라우드 전송 (필수)
+  let cloudOk = false;
+  let cloudMsg = '';
+  if (hasCloudConfig()) {
+    cloudOk = await appendToCloud(entry);
+    if (!cloudOk) {
+      // 실패 시 대기 큐에 저장 → 다음 페이지 로드 시 자동 재시도
+      addToPendingQueue(entry);
+      cloudMsg = '⚠ 일시적인 네트워크 오류로 서버 전송이 지연되었습니다. 잠시 후 자동 재전송됩니다.';
+    } else {
+      cloudMsg = '✓ 응답이 서버에 안전하게 저장되었습니다.';
+    }
+  } else {
+    cloudMsg = '⚠ 클라우드가 설정되지 않았습니다. 응답이 본 기기에만 저장됩니다.';
   }
 
   document.getElementById('sf').classList.add('hidden');
   document.getElementById('rs').classList.remove('hidden');
+  document.getElementById('rs-msg').innerHTML =
+    '소중한 의견을 보내주셔서 감사합니다.<br>' +
+    '<span class="text-xs text-textSub">' + cloudMsg + '</span>';
   document.querySelector('header').classList.add('hidden');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ═══════════════════════════════════════════════════════
-//  ADMIN
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  관리자 인증
+// ═══════════════════════════════════════════════════════════════════
 function openAM() { const m=document.getElementById('am'); m.classList.remove('hidden'); m.classList.add('flex'); document.getElementById('ap').focus(); }
 function closeAM() { const m=document.getElementById('am'); m.classList.add('hidden'); m.classList.remove('flex'); document.getElementById('ap').value=''; document.getElementById('ae').classList.add('hidden'); }
 function checkAdmin() {
-  if (document.getElementById('ap').value === 'admin') { closeAM(); enterAdmin(); }
+  if (document.getElementById('ap').value === ADMIN_PASSWORD) { closeAM(); enterAdmin(); }
   else { document.getElementById('ae').classList.remove('hidden'); document.getElementById('ap').value=''; }
 }
 function enterAdmin() {
@@ -541,9 +817,15 @@ function enterAdmin() {
   document.getElementById('sh').classList.add('hidden');
   const ah = document.getElementById('ah'); ah.classList.remove('hidden'); ah.classList.add('flex');
   document.getElementById('pbc').classList.add('hidden');
-  // 설정 UI 초기화
-  document.getElementById('jbkey').value = jbKey;
-  document.getElementById('jbid').value = jbBinId;
+  // override 키가 있으면 표시
+  document.getElementById('jbkey').value = localStorage.getItem('jb_key_override') || '';
+  document.getElementById('jbid').value = localStorage.getItem('jb_bin_id_override') || '';
+  dlog('관리자 대시보드 진입', 'info');
+  if (hasCloudConfig()) {
+    dlog(`클라우드 키 감지: ${jbKey.substring(0,8)}... / Bin ${jbBinId.substring(0,8)}...`, 'ok');
+  } else {
+    dlog('⚠️ 클라우드 키 미설정 - 코드 상단 EMBEDDED_KEY/EMBEDDED_BIN_ID를 채워주세요', 'warn');
+  }
   doRefresh();
 }
 function exitAdmin() {
@@ -561,16 +843,18 @@ async function doRefresh() {
   const btn = document.getElementById('rbtn');
   if (btn) { btn.innerHTML='<i class="fas fa-spinner sp"></i><span>로딩...</span>'; btn.disabled=true; }
   document.getElementById('cst').textContent = '불러오는 중...';
+  // 새로고침 전에 대기 큐도 한번 시도
+  await flushPendingQueue();
   await loadAllData();
   renderDash();
-  document.getElementById('cst').textContent = '실시간 연결됨';
+  document.getElementById('cst').textContent = hasCloudConfig() ? '실시간 연결됨' : '로컬만';
   if (btn) { btn.innerHTML='<i class="fas fa-sync-alt"></i><span>새로고침</span>'; btn.disabled=false; }
   toast(`${allData.length}개 응답 로드 완료`, 'success');
 }
 
-// ═══════════════════════════════════════════════════════
-//  DASHBOARD RENDER
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  대시보드 렌더
+// ═══════════════════════════════════════════════════════════════════
 function renderDash() {
   calcStats();
   renderCharts();
@@ -580,6 +864,8 @@ function renderDash() {
   renderCross();
   renderCauses();
   renderRaw();
+  renderVZ();
+  renderDB();
 }
 
 function gc(qid) {
@@ -591,8 +877,13 @@ function gc(qid) {
 function calcStats() {
   const n = allData.length;
   document.getElementById('st0').textContent = n;
-  document.getElementById('dbc').textContent = n+'개';
-  if (!n) return;
+  if (!n) {
+    document.getElementById('st1').textContent='-';
+    document.getElementById('st2').textContent='-';
+    document.getElementById('st3').textContent='0%';
+    document.getElementById('rl').textContent='데이터 없음';
+    return;
+  }
 
   const cafMap=[0,50,200,400,500];
   const avgCaf=Math.round(allData.reduce((s,d)=>s+(cafMap[(d.responses.q4?.answerIndex||1)-1]||0),0)/n);
@@ -613,13 +904,13 @@ function calcStats() {
 }
 
 function dk(name){if(charts[name]){try{charts[name].destroy();}catch{}delete charts[name];}}
-const cOpts=(ymax)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:ymax,grid:{color:'rgba(255,255,255,0.07)'},ticks:{color:'#94a3b8'}},x:{grid:{display:false},ticks:{color:'#94a3b8',maxRotation:35}}}});
+const cOpts=(ymax)=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:ymax,grid:{color:'rgba(255,255,255,0.07)'},ticks:{color:'#94a3b8',precision:0}},x:{grid:{display:false},ticks:{color:'#94a3b8',maxRotation:35}}}});
 
 function renderCharts(){
   dk('c1');dk('c2');dk('c3');
   charts.c1=new Chart(document.getElementById('ch1'),{type:'bar',data:{labels:['0mg','1-100','100-300','300-500','500+'],datasets:[{data:gc('q4'),backgroundColor:['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444'],borderRadius:6}]},options:cOpts()});
   charts.c2=new Chart(document.getElementById('ch2'),{type:'doughnut',data:{labels:['22시전','22-24시','24-2시','2-4시','4시후'],datasets:[{data:gc('q9'),backgroundColor:['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#94a3b8',boxWidth:10,font:{size:11}}}}}});
-  charts.c3=new Chart(document.getElementById('ch3'),{type:'line',data:{labels:['<1h','1-3h','3-5h','5-7h','7h+'],datasets:[{data:gc('q17'),borderColor:'#ec4899',backgroundColor:'rgba(236,72,153,0.12)',fill:true,tension:0.4}]},options:cOpts()});
+  charts.c3=new Chart(document.getElementById('ch3'),{type:'line',data:{labels:['<1h','1-3h','3-5h','5-7h','7h+'],datasets:[{data:gc('q17'),borderColor:'#ec4899',backgroundColor:'rgba(236,72,153,0.12)',fill:true,tension:0.4,pointBackgroundColor:'#ec4899'}]},options:cOpts()});
 }
 
 function renderHourly(){
@@ -723,103 +1014,467 @@ function filterTbl(){
   document.querySelectorAll('#rdb tr').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(t)?'':'none';});
 }
 
-// ═══════════════════════════════════════════════════════
-//  TAB SWITCH
-// ═══════════════════════════════════════════════════════
-function switchTab(id){
+// ═══════════════════════════════════════════════════════════════════
+//  상세 시각화 (VZ) - 신규
+// ═══════════════════════════════════════════════════════════════════
+function renderVZ() {
+  ['v1','v2','v3','v4','v5','v6','v7','v8','v9'].forEach(k=>dk(k));
+  if (!allData.length) return;
+
+  const palette = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444'];
+
+  // VZ1: 카페인 음료 종류
+  charts.v1 = new Chart(document.getElementById('vz1'), {
+    type:'pie',
+    data:{labels:Opts.q5, datasets:[{data:gc('q5'), backgroundColor:palette, borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}}}
+  });
+
+  // VZ2: 카페인 섭취 시간대
+  charts.v2 = new Chart(document.getElementById('vz2'), {
+    type:'bar',
+    data:{labels:Opts.q6, datasets:[{data:gc('q6'), backgroundColor:palette, borderRadius:6}]},
+    options:cOpts()
+  });
+
+  // VZ3: 수면 잠복기
+  charts.v3 = new Chart(document.getElementById('vz3'), {
+    type:'bar',
+    data:{labels:Opts.q8, datasets:[{data:gc('q8'), backgroundColor:'rgba(139,92,246,.7)', borderRadius:6}]},
+    options:cOpts()
+  });
+
+  // VZ4: 오전 피로도
+  charts.v4 = new Chart(document.getElementById('vz4'), {
+    type:'bar',
+    data:{labels:Opts.q15, datasets:[{data:gc('q15'), backgroundColor:'rgba(236,72,153,.7)', borderRadius:6}]},
+    options:cOpts()
+  });
+
+  // VZ5: 카테고리별 평균 응답 - 레이더
+  const catAvg = cat => {
+    const qs = Qs.filter(q=>q.cat===cat).map(q=>q.id);
+    if (!qs.length) return 0;
+    let total=0, count=0;
+    allData.forEach(d=>{
+      qs.forEach(qid=>{
+        const v = d.responses[qid]?.answerIndex;
+        if (v) { total+=v; count++; }
+      });
+    });
+    return count ? total/count : 0;
+  };
+  charts.v5 = new Chart(document.getElementById('vz5'), {
+    type:'radar',
+    data:{
+      labels:['카페인 영향','수면 패턴','두뇌 활성도','디지털 사용'],
+      datasets:[{
+        label:'평균 응답 강도',
+        data:[catAvg('caffeine'),catAvg('sleep'),catAvg('brain'),catAvg('digital')],
+        backgroundColor:'rgba(99,102,241,.25)',
+        borderColor:'#6366f1',
+        borderWidth:2,
+        pointBackgroundColor:'#ec4899',
+        pointRadius:5
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{r:{beginAtZero:true,max:5,grid:{color:'rgba(255,255,255,0.1)'},angleLines:{color:'rgba(255,255,255,0.1)'},pointLabels:{color:'#f8fafc',font:{size:12}},ticks:{color:'#94a3b8',backdropColor:'transparent'}}},
+      plugins:{legend:{labels:{color:'#94a3b8'}}}
+    }
+  });
+
+  // VZ6: 야간 콘텐츠 (q19) - polar area
+  charts.v6 = new Chart(document.getElementById('vz6'), {
+    type:'polarArea',
+    data:{labels:Opts.q19, datasets:[{data:gc('q19'), backgroundColor:palette.map(c=>c+'cc'), borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right',labels:{color:'#94a3b8',boxWidth:10,font:{size:10}}}}, scales:{r:{grid:{color:'rgba(255,255,255,0.1)'},angleLines:{color:'rgba(255,255,255,0.1)'},ticks:{color:'#94a3b8',backdropColor:'transparent'}}}}
+  });
+
+  // VZ7: 야간 모드 (q18) - bar
+  charts.v7 = new Chart(document.getElementById('vz7'), {
+    type:'bar',
+    data:{labels:Opts.q18, datasets:[{data:gc('q18'), backgroundColor:['#ef4444','#f59e0b','#3b82f6','#8b5cf6','#10b981'], borderRadius:6}]},
+    options:cOpts()
+  });
+
+  // VZ8: 일별 응답 추이 (최근 14일)
+  const days = [];
+  const counts = [];
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let i=13; i>=0; i--) {
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const next = new Date(d); next.setDate(next.getDate()+1);
+    days.push(`${d.getMonth()+1}/${d.getDate()}`);
+    counts.push(allData.filter(x=>{const t=new Date(x.timestamp); return t>=d&&t<next;}).length);
+  }
+  charts.v8 = new Chart(document.getElementById('vz8'), {
+    type:'line',
+    data:{labels:days, datasets:[{label:'일별 응답 수',data:counts,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.15)',fill:true,tension:0.35,pointBackgroundColor:'#10b981',pointRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.07)'},ticks:{color:'#94a3b8',precision:0}},x:{grid:{display:false},ticks:{color:'#94a3b8'}}}}
+  });
+
+  // VZ9: 지역별 응답 (상위 10)
+  const cities = {};
+  allData.forEach(d=>{
+    const c = d.clientInfo?.city || 'Unknown';
+    cities[c] = (cities[c]||0)+1;
+  });
+  const sorted = Object.entries(cities).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  charts.v9 = new Chart(document.getElementById('vz9'), {
+    type:'bar',
+    data:{labels:sorted.map(x=>x[0]), datasets:[{data:sorted.map(x=>x[1]), backgroundColor:'rgba(236,72,153,.7)', borderRadius:6}]},
+    options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.07)'},ticks:{color:'#94a3b8',precision:0}},y:{grid:{display:false},ticks:{color:'#94a3b8'}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  응답 데이터베이스 (DB) - 신규
+// ═══════════════════════════════════════════════════════════════════
+function renderDB() {
+  const search = (document.getElementById('db-search')?.value || '').toLowerCase().trim();
+  const filter = document.getElementById('db-filter')?.value || 'all';
+
+  let filtered = [...allData];
+  if (filter === 'real') filtered = filtered.filter(d=>!d.isTest);
+  else if (filter === 'test') filtered = filtered.filter(d=>d.isTest);
+
+  if (search) {
+    filtered = filtered.filter(d=>{
+      const blob = JSON.stringify(d).toLowerCase();
+      return blob.includes(search);
+    });
+  }
+
+  filtered = filtered.slice().reverse();
+
+  const realCount = allData.filter(d=>!d.isTest).length;
+  const testCount = allData.filter(d=>d.isTest).length;
+  document.getElementById('db-count').textContent = filtered.length;
+  document.getElementById('db-real').textContent = realCount;
+  document.getElementById('db-test').textContent = testCount;
+  document.getElementById('db-total').textContent = allData.length;
+
+  const tb = document.getElementById('db-body');
+  tb.innerHTML = '';
+  if (!filtered.length) {
+    tb.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-textSub">표시할 응답이 없습니다.</td></tr>`;
+    return;
+  }
+
+  filtered.forEach((d, idx) => {
+    const realId = allData.indexOf(d)+1;
+    const ts = new Date(d.timestamp).toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const ua = d.userAgent || '';
+    let br = 'Other';
+    if(ua.includes('Chrome')&&!ua.includes('Edg')) br='Chrome';
+    else if(ua.includes('Edg')) br='Edge';
+    else if(ua.includes('Safari')&&!ua.includes('Chrome')) br='Safari';
+    else if(ua.includes('Firefox')) br='Firefox';
+    const rowKey = 'row_'+realId+'_'+d.timestamp;
+    const isOpen = dbExpanded.has(rowKey);
+
+    const tr = document.createElement('tr');
+    tr.className = 'db-row';
+    tr.innerHTML = `
+      <td class="px-3 py-3 text-textSub"><i class="fas fa-chevron-${isOpen?'down':'right'} text-xs"></i></td>
+      <td class="px-3 py-3 font-mono text-white">#${realId}</td>
+      <td class="px-3 py-3"><span class="ts-b px-2 py-0.5 rounded text-xs text-emerald-300">${ts}</span></td>
+      <td class="px-3 py-3"><span class="loc-b px-2 py-0.5 rounded text-purple-300"><i class="fas fa-map-marker-alt mr-1"></i>${d.clientInfo?.city||'?'} / ${d.clientInfo?.country||'?'}</span></td>
+      <td class="px-3 py-3"><span class="ip-b px-2 py-0.5 rounded text-slate-300">${d.clientInfo?.maskedIp||'***'}</span></td>
+      <td class="px-3 py-3 text-textSub">${br}</td>
+      <td class="px-3 py-3">${d.isTest?'<span class="bg-warning/20 text-warning px-2 py-0.5 rounded text-xs">TEST</span>':'<span class="bg-success/20 text-success px-2 py-0.5 rounded text-xs">REAL</span>'}</td>
+      <td class="px-3 py-3 text-center"><button onclick="event.stopPropagation();showDetail(${realId-1})" class="text-primary hover:text-white" title="상세보기"><i class="fas fa-external-link-alt"></i></button></td>
+    `;
+    tr.onclick = () => toggleDBRow(rowKey);
+    tb.appendChild(tr);
+
+    if (isOpen) {
+      const dr = document.createElement('tr');
+      dr.className = 'db-detail';
+      dr.innerHTML = `<td colspan="8" class="px-4 py-4">${buildDetailHTML(d)}</td>`;
+      tb.appendChild(dr);
+    }
+  });
+}
+
+function toggleDBRow(key) {
+  if (dbExpanded.has(key)) dbExpanded.delete(key);
+  else dbExpanded.add(key);
+  renderDB();
+}
+
+function buildDetailHTML(d) {
+  const cats = ['caffeine','sleep','brain','digital'];
+  let html = '<div class="space-y-4">';
+  cats.forEach(cat=>{
+    const catQs = Qs.filter(q=>q.cat===cat);
+    html += `<div>
+      <h4 class="text-xs font-bold text-primary mb-2"><i class="fas fa-folder mr-1"></i>${CatLabels[cat]}</h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">`;
+    catQs.forEach(q=>{
+      const r = d.responses[q.id];
+      const ans = r ? r.answerText : '응답 없음';
+      const idx = r ? r.answerIndex : 0;
+      html += `<div class="qbox rounded-lg p-3">
+        <div class="flex items-start justify-between gap-2 mb-1">
+          <span class="text-[10px] text-textSub font-mono">${q.id.toUpperCase()} · ${q.lbl}</span>
+          <span class="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded">${idx}/5</span>
+        </div>
+        <p class="text-xs text-slate-300 mb-1.5 leading-relaxed">${q.txt}</p>
+        <p class="text-sm text-white font-medium"><i class="fas fa-arrow-right text-success text-xs mr-1"></i>${ans}</p>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `<div class="border-t border-slate-700 pt-3 mt-3 text-xs text-textSub grid grid-cols-2 md:grid-cols-4 gap-2">
+    <div><span class="text-textSub">IP:</span> <span class="text-white font-mono">${d.clientInfo?.ip||'?'}</span></div>
+    <div><span class="text-textSub">ISP:</span> <span class="text-white">${d.clientInfo?.isp||'?'}</span></div>
+    <div><span class="text-textSub">국가:</span> <span class="text-white">${d.clientInfo?.country||'?'}</span></div>
+    <div><span class="text-textSub">제출시간:</span> <span class="text-white">${new Date(d.timestamp).toLocaleString('ko-KR')}</span></div>
+  </div>`;
+  html += '</div>';
+  return html;
+}
+
+function showDetail(idx) {
+  const d = allData[idx];
+  if (!d) return;
+  document.getElementById('dm-title').textContent = `응답 #${idx+1} 상세 보기 ${d.isTest?'(테스트 데이터)':''}`;
+  document.getElementById('dm-subtitle').textContent = `${new Date(d.timestamp).toLocaleString('ko-KR')} · ${d.clientInfo?.city||'?'} · ${d.clientInfo?.maskedIp||'?'}`;
+  document.getElementById('dm-body').innerHTML = buildDetailHTML(d);
+  const m = document.getElementById('dm');
+  m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeDetailModal() {
+  const m = document.getElementById('dm');
+  m.classList.add('hidden'); m.classList.remove('flex');
+}
+
+// CSV / JSON 내보내기
+function exportCSV() {
+  if (!allData.length) { toast('내보낼 데이터가 없습니다.', 'warning'); return; }
+  const header = ['ID','Timestamp','City','Country','IP','Browser','IsTest', ...Qs.map(q=>q.id+'_idx'), ...Qs.map(q=>q.id+'_text')];
+  const rows = [header];
+  allData.forEach((d,i)=>{
+    const ua = d.userAgent||'';
+    let br='Other';
+    if(ua.includes('Chrome')&&!ua.includes('Edg')) br='Chrome';
+    else if(ua.includes('Edg')) br='Edge';
+    else if(ua.includes('Safari')&&!ua.includes('Chrome')) br='Safari';
+    else if(ua.includes('Firefox')) br='Firefox';
+    const row = [
+      i+1,
+      d.timestamp,
+      d.clientInfo?.city||'',
+      d.clientInfo?.country||'',
+      d.clientInfo?.maskedIp||'',
+      br,
+      d.isTest?'true':'false',
+      ...Qs.map(q=>d.responses[q.id]?.answerIndex||''),
+      ...Qs.map(q=>(d.responses[q.id]?.answerText||'').replace(/"/g,'""'))
+    ];
+    rows.push(row);
+  });
+  const csv = '\uFEFF' + rows.map(r=>r.map(v=>{
+    const s = String(v);
+    return (s.includes(',')||s.includes('"')||s.includes('\n')) ? `"${s}"` : s;
+  }).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`survey-responses-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast(`${allData.length}개 응답 CSV 내보내기 완료`, 'success');
+}
+function exportJSON() {
+  if (!allData.length) { toast('내보낼 데이터가 없습니다.', 'warning'); return; }
+  const blob = new Blob([JSON.stringify(allData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`survey-responses-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  toast(`${allData.length}개 응답 JSON 내보내기 완료`, 'success');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  탭 전환
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(id) {
   document.querySelectorAll('.tb').forEach(b=>{b.classList.remove('on','text-white');b.classList.add('text-textSub');});
   document.getElementById('t-'+id).classList.add('on','text-white');
   document.getElementById('t-'+id).classList.remove('text-textSub');
   document.querySelectorAll('.tc').forEach(c=>c.classList.add('hidden'));
   document.getElementById('c-'+id).classList.remove('hidden');
-  if(id==='ov'||id==='co'){renderCharts();renderHeatmap();renderScatter();renderHourly();}
-  if(id==='rd') renderRaw();
+  if (id==='ov') { renderCharts(); renderHourly(); }
+  if (id==='vz') renderVZ();
+  if (id==='co') { renderHeatmap(); renderScatter(); }
+  if (id==='rd') renderRaw();
+  if (id==='db') renderDB();
 }
 
-// ═══════════════════════════════════════════════════════
-//  SETTINGS ACTIONS
-// ═══════════════════════════════════════════════════════
-function saveJBConfig(){
-  jbKey = document.getElementById('jbkey').value.trim();
-  jbBinId = document.getElementById('jbid').value.trim();
-  localStorage.setItem('jb_key', jbKey);
-  localStorage.setItem('jb_bin_id', jbBinId);
-  const st = document.getElementById('jbst');
-  st.textContent = jbKey && jbBinId ? '✓ 저장 완료. 새로고침하면 클라우드 응답이 불러와집니다.' : '저장됨 (키 미입력 = 로컬 모드)';
-  st.className = 'mt-2 text-xs ' + (jbKey && jbBinId ? 'text-success' : 'text-warning');
+// ═══════════════════════════════════════════════════════════════════
+//  설정 액션
+// ═══════════════════════════════════════════════════════════════════
+function saveJBConfig() {
+  const k = document.getElementById('jbkey').value.trim();
+  const b = document.getElementById('jbid').value.trim();
+  if (k) localStorage.setItem('jb_key_override', k); else localStorage.removeItem('jb_key_override');
+  if (b) localStorage.setItem('jb_bin_id_override', b); else localStorage.removeItem('jb_bin_id_override');
+  jbKey   = k || EMBEDDED_KEY;
+  jbBinId = b || EMBEDDED_BIN_ID;
+  toast('설정이 저장되었습니다. 새로고침을 누르세요.', 'success');
+  dlog(`설정 저장 - Key:${jbKey?'설정됨':'미설정'} / Bin:${jbBinId?'설정됨':'미설정'}`, 'ok');
 }
 
-async function testJBConfig(){
-  const key = document.getElementById('jbkey').value.trim();
-  const bid = document.getElementById('jbid').value.trim();
-  const st = document.getElementById('jbst');
-  if(!key||!bid){st.textContent='키와 Bin ID를 모두 입력하세요.';st.className='mt-2 text-xs text-warning';return;}
-  st.textContent='연결 테스트 중...';st.className='mt-2 text-xs text-textSub';
+function resetJBConfig() {
+  localStorage.removeItem('jb_key_override');
+  localStorage.removeItem('jb_bin_id_override');
+  jbKey   = EMBEDDED_KEY;
+  jbBinId = EMBEDDED_BIN_ID;
+  document.getElementById('jbkey').value='';
+  document.getElementById('jbid').value='';
+  toast('기본값으로 복원되었습니다.', 'info');
+  dlog('설정 초기화 - 코드 내장 기본값 사용', 'info');
+}
+
+async function testConnection() {
+  const msg = document.getElementById('sync-msg');
+  msg.textContent='연결 테스트 중...'; msg.className='mt-3 text-xs text-textSub';
+  if (!hasCloudConfig()) {
+    msg.innerHTML = '<span class="text-warning">⚠ 클라우드 키가 설정되지 않았습니다. HTML 파일의 EMBEDDED_KEY/EMBEDDED_BIN_ID를 채우거나 위 입력란에 입력하세요.</span>';
+    dlog('연결 테스트 - 키 미설정', 'warn');
+    return;
+  }
+  dlog('연결 테스트 시작...', 'info');
   try {
-    const r=await fetch(`${JB_BASE}/${bid}/latest`,{headers:{'X-Master-Key':key}});
-    if(r.ok){const d=await r.json();st.textContent=`✓ 연결 성공! 현재 저장된 응답: ${(d.record?.responses||[]).length}건`;st.className='mt-2 text-xs text-success';}
-    else{st.textContent=`✗ 연결 실패 (${r.status}). Key/BinID를 확인하세요.`;st.className='mt-2 text-xs text-danger';}
-  } catch(e){st.textContent='✗ 네트워크 오류: '+e.message;st.className='mt-2 text-xs text-danger';}
+    const r = await fetch(`${JB_BASE}/${jbBinId}/latest`, {headers:{'X-Master-Key':jbKey}});
+    if (r.ok) {
+      const d = await r.json();
+      const cnt = (d.record?.responses||[]).length;
+      msg.innerHTML = `<span class="text-success">✓ 연결 성공! 현재 클라우드 응답 수: ${cnt}개</span>`;
+      dlog(`연결 성공: ${cnt}개 응답 확인`, 'ok');
+    } else {
+      msg.innerHTML = `<span class="text-danger">✗ 연결 실패 (HTTP ${r.status}). Key/BinID를 확인하세요.</span>`;
+      dlog(`연결 실패: HTTP ${r.status}`, 'err');
+    }
+  } catch (e) {
+    msg.innerHTML = `<span class="text-danger">✗ 네트워크 오류: ${e.message}</span>`;
+    dlog(`연결 실패: ${e.message}`, 'err');
+  }
 }
 
-async function pushLocalToJB(){
-  const local=lsGet();
-  if(!local.length){toast('업로드할 로컬 데이터가 없습니다.','info');return;}
-  if(!jbKey||!jbBinId){toast('JSONBin 설정이 필요합니다.','warning');return;}
-  const cloud=await jbRead()||[];
-  const ts=new Set(cloud.map(d=>d.timestamp));
-  const newOnes=local.filter(d=>!ts.has(d.timestamp));
-  if(!newOnes.length){toast('이미 모두 동기화되어 있습니다.','info');return;}
-  const merged=[...cloud,...newOnes].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-  const ok=await jbWrite(merged);
-  if(ok){toast(`${newOnes.length}개 업로드 완료!`,'success');doRefresh();}
-  else toast('업로드 실패. 설정을 확인하세요.','error');
+async function forceSyncAll() {
+  dlog('강제 전체 동기화 시작...', 'info');
+  toast('동기화 중...', 'info');
+  await flushPendingQueue();
+  await loadAllData();
+  renderDash();
+  toast('동기화 완료', 'success');
 }
 
-async function genTestData(){
-  const cnt=parseInt(document.getElementById('tc').value)||5;
-  const cities=['서울','부산','인천','대구','광주','대전','수원'];
-  const entries=[];
-  for(let i=0;i<cnt;i++){
-    const e={
-      timestamp:new Date(Date.now()-Math.random()*7*86400000).toISOString(),
-      responses:{}, clientInfo:{ip:'192.168.1.x',maskedIp:'192.168.1.***',city:cities[~~(Math.random()*cities.length)],country:'South Korea',isp:'Test'},
-      userAgent:'Mozilla/5.0 (Test)',isTest:true
+async function pushLocalToCloud() {
+  const local = lsGet();
+  if (!local.length) { toast('업로드할 로컬 데이터가 없습니다.', 'info'); return; }
+  if (!hasCloudConfig()) { toast('클라우드 설정이 필요합니다.', 'warning'); return; }
+  const cloud = await jbRead() || [];
+  const keyOf = d => (d.timestamp||'') + '|' + (d.clientInfo?.ip||'?');
+  const cloudKeys = new Set(cloud.map(keyOf));
+  const newOnes = local.filter(d=>!cloudKeys.has(keyOf(d)));
+  if (!newOnes.length) { toast('이미 모두 동기화되어 있습니다.', 'info'); return; }
+  const merged = [...cloud, ...newOnes].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const ok = await jbWrite(merged);
+  if (ok) { toast(`${newOnes.length}개 업로드 완료!`, 'success'); doRefresh(); dlog(`로컬→클라우드 ${newOnes.length}개 업로드 완료`, 'ok'); }
+  else { toast('업로드 실패. 설정을 확인하세요.', 'error'); dlog('로컬→클라우드 업로드 실패', 'err'); }
+}
+
+async function genTestData() {
+  const cnt = parseInt(document.getElementById('tc').value)||5;
+  const cities = ['서울','부산','인천','대구','광주','대전','수원','성남','용인','고양'];
+  const entries = [];
+  for (let i=0;i<cnt;i++) {
+    const e = {
+      timestamp: new Date(Date.now()-Math.random()*7*86400000).toISOString(),
+      responses: {},
+      clientInfo: {ip:'192.168.1.'+(~~(Math.random()*255)), maskedIp:'192.168.1.***', city:cities[~~(Math.random()*cities.length)], country:'South Korea', isp:'Test ISP'},
+      userAgent: 'Mozilla/5.0 (Test)',
+      isTest: true
     };
     Qs.forEach(q=>{const v=~~(Math.random()*5)+1;e.responses[q.id]={question:q.txt,category:q.cat,answerIndex:v,answerText:Opts[q.id][v-1]};});
     entries.push(e);
     lsAdd(e);
   }
-  if(jbKey&&jbBinId){
-    const cur=await jbRead()||[];
-    await jbWrite([...cur,...entries]);
+  if (hasCloudConfig()) {
+    const cur = await jbRead() || [];
+    await jbWrite([...cur, ...entries]);
   }
   await doRefresh();
-  toast(`${cnt}개 테스트 데이터 생성 완료`,'success');
+  toast(`${cnt}개 테스트 데이터 생성 완료`, 'success');
 }
 
-async function clearData(){
-  if(!confirm('정말로 모든 데이터를 삭제하시겠습니까?'))return;
+async function clearTestData() {
+  if (!confirm('테스트 데이터(TEST 태그)만 삭제합니다. 계속하시겠습니까?')) return;
+  // 로컬
+  lsSet(lsGet().filter(d=>!d.isTest));
+  // 클라우드
+  if (hasCloudConfig()) {
+    const cur = await jbRead() || [];
+    await jbWrite(cur.filter(d=>!d.isTest));
+  }
+  await doRefresh();
+  toast('테스트 데이터 삭제 완료', 'info');
+}
+
+async function clearData() {
+  if (!confirm('정말로 모든 데이터를 삭제하시겠습니까?\n(실제 응답까지 모두 삭제됩니다)')) return;
   lsClear();
-  if(jbKey&&jbBinId) await jbWrite([]);
-  allData=[];
+  setPendingQueue([]);
+  if (hasCloudConfig()) await jbWrite([]);
+  allData = [];
   renderDash();
-  toast('모든 데이터가 삭제되었습니다.','info');
+  toast('모든 데이터가 삭제되었습니다.', 'info');
+  dlog('전체 데이터 삭제 완료', 'warn');
 }
 
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  PDF EXPORT
-// ═══════════════════════════════════════════════════════
-function exportPDF(){
-  const {jsPDF}=window.jspdf;const doc=new jsPDF();
-  doc.setFontSize(16);doc.text('수면·카페인·디지털 습관 연구 결과',14,18);
+// ═══════════════════════════════════════════════════════════════════
+function exportPDF() {
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  doc.setFontSize(16);doc.text('Sleep/Caffeine/Digital Habits Survey Results',14,18);
   doc.setFontSize(10);
-  doc.text(`총 응답자: ${document.getElementById('st0').textContent}명  |  평균 카페인: ${document.getElementById('st1').textContent}  |  위험도: ${document.getElementById('st3').textContent}`,14,30);
-  doc.text(`생성일: ${new Date().toLocaleString('ko-KR')}`,14,38);
-  const rows=allData.map((d,i)=>[i+1,d.responses.q4?.answerText||'-',d.responses.q9?.answerText||'-',d.responses.q8?.answerText||'-',d.responses.q1?.answerText||'-',d.clientInfo?.city||'?',new Date(d.timestamp).toLocaleDateString('ko-KR')]);
-  doc.autoTable({head:[['ID','카페인량','취침시간','수면잠복기','수면영향','위치','제출일']],body:rows,startY:46,styles:{fontSize:7,cellPadding:1.5},headStyles:{fillColor:[99,102,241]}});
+  doc.text(`Total Responses: ${document.getElementById('st0').textContent}  |  Avg Caffeine: ${document.getElementById('st1').textContent}  |  Risk: ${document.getElementById('st3').textContent}`,14,30);
+  doc.text(`Generated: ${new Date().toLocaleString('ko-KR')}`,14,38);
+  const rows=allData.map((d,i)=>[i+1,d.responses.q4?.answerIndex||'-',d.responses.q9?.answerIndex||'-',d.responses.q8?.answerIndex||'-',d.responses.q1?.answerIndex||'-',d.clientInfo?.city||'?',new Date(d.timestamp).toLocaleDateString('ko-KR')]);
+  doc.autoTable({head:[['ID','Caf','Bedtime','SleepLat','SleepInf','City','Date']],body:rows,startY:46,styles:{fontSize:7,cellPadding:1.5},headStyles:{fillColor:[99,102,241]}});
   doc.save('survey-results.pdf');
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  WINDOW EXPORTS (테스트 및 외부 접근 지원)
+//  - inline <script>의 let/const는 자동으로 window에 노출되지 않음
+//  - 동적 getter를 사용하여 항상 최신값 반환
+// ═══════════════════════════════════════════════════════════════════
+Object.defineProperty(window, 'allData', { get: () => allData, configurable: true });
+Object.defineProperty(window, 'charts',  { get: () => charts,  configurable: true });
+window.startSurvey       = startSurvey;
+window.submitSurvey      = submitSurvey;
+window.openAM            = openAM;
+window.closeAM           = closeAM;
+window.checkAdmin        = checkAdmin;
+window.exitAdmin         = exitAdmin;
+window.switchTab         = switchTab;
+window.doRefresh         = doRefresh;
+window.exportCSV         = exportCSV;
+window.exportJSON        = exportJSON;
+window.exportPDF         = exportPDF;
+window.showDetail        = showDetail;
+window.closeDetailModal  = closeDetailModal;
+window.flushPendingQueue = flushPendingQueue;
+window.testConnection    = typeof testConnection !== 'undefined' ? testConnection : null;
+window.forceSyncAll      = typeof forceSyncAll   !== 'undefined' ? forceSyncAll   : null;
+window.pushLocalToCloud  = typeof pushLocalToCloud!== 'undefined' ? pushLocalToCloud: null;
+window.clearAll          = typeof clearAll       !== 'undefined' ? clearAll       : null;
 </script>
 </body>
 </html>
