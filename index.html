@@ -470,12 +470,12 @@ body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);color:#f8fafc;mi
 //      관리자가 다른 응답자의 응답을 볼 수 없습니다!
 // ═══════════════════════════════════════════════════════════════════
 
-const EMBEDDED_KEY    = '$2a$10$k8m3Bc0bj3CCFd87nHOW4uLWeU5jIhq9gB8SNZo0paK1tuMi..4z.';  // 예: '$2a$10$abcdefg.................'
-const EMBEDDED_BIN_ID = '6a12d5f26877513b27c479fa';  // 예: '65f1a2b3c0e7653a1234abcd'
+const EMBEDDED_KEY    = '';  // 예: '$2a$10$abcdefg.................'
+const EMBEDDED_BIN_ID = '';  // 예: '65f1a2b3c0e7653a1234abcd'
 
 // ═══════════════════════════════════════════════════════════════════
 
-const ADMIN_PASSWORD = 'gmdtjseodnjsrns';
+const ADMIN_PASSWORD = '흥선대원군';
 const JB_BASE = 'https://api.jsonbin.io/v3/b';
 
 // localStorage 우선순위: 사용자가 설정 화면에서 덮어쓴 값 > 코드 내장값
@@ -568,7 +568,11 @@ async function jbRead() {
       cache: 'no-store'
     });
     if (!r.ok) {
-      dlog(`jbRead 실패: HTTP ${r.status}`, 'err');
+      if (r.status === 401) {
+        dlog('jbRead 실패: HTTP 401 — Master Key가 없거나 잘못되었습니다. 설정 탭에서 키를 확인하세요.', 'err');
+      } else {
+        dlog(`jbRead 실패: HTTP ${r.status}`, 'err');
+      }
       return null;
     }
     const d = await r.json();
@@ -591,7 +595,13 @@ async function jbWrite(arr) {
       body: JSON.stringify({responses: arr})
     });
     if (!r.ok) {
-      dlog(`jbWrite 실패: HTTP ${r.status}`, 'err');
+      if (r.status === 401) {
+        dlog('jbWrite 실패: HTTP 401 — Master Key가 없거나 잘못되었습니다. 설정 탭에서 키를 확인하세요.', 'err');
+      } else if (r.status === 413) {
+        dlog('jbWrite 실패: HTTP 413 — JSON 크기 한도 초과. JSONBin Pro 업그레이드 필요 (무료: 100KB)', 'err');
+      } else {
+        dlog(`jbWrite 실패: HTTP ${r.status}`, 'err');
+      }
       return false;
     }
     return true;
@@ -1488,11 +1498,21 @@ async function clearData() {
   if (!confirm('정말로 모든 데이터를 삭제하시겠습니까?\n(실제 응답까지 모두 삭제됩니다)')) return;
   lsClear();
   setPendingQueue([]);
-  if (hasCloudConfig()) await jbWrite([]);
+  if (hasCloudConfig()) {
+    const ok = await jbWrite([]);
+    if (!ok) {
+      dlog('⚠️ 클라우드 삭제 실패 - 로컬만 삭제됨. 키 설정을 확인하세요.', 'err');
+      toast('로컬 데이터만 삭제됨 (클라우드 실패 → 설정 탭에서 키 확인)', 'warning');
+    } else {
+      toast('모든 데이터가 삭제되었습니다.', 'info');
+      dlog('전체 데이터 삭제 완료', 'warn');
+    }
+  } else {
+    toast('로컬 데이터 삭제 완료 (클라우드 키 미설정)', 'info');
+    dlog('로컬 데이터 삭제 완료 (클라우드 미연결)', 'warn');
+  }
   allData = [];
   renderDash();
-  toast('모든 데이터가 삭제되었습니다.', 'info');
-  dlog('전체 데이터 삭제 완료', 'warn');
 }
 
 // ═══════════════════════════════════════════════════════════════════
